@@ -1,0 +1,38 @@
+# Environments
+venv/
+.venv/
+env/
+
+# Secrets — NEVER commit these
+.env
+*.key
+.streamlit/secrets.toml
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Notebooks
+.ipynb_checkpoints/
+
+# OS
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Editors
+.vscode/
+.idea/
+
+# Large intermediates (keep the raw source files tracked)
+*.pkl.bak
+
+# NOTE (Day 13): Models/ and Data/ are intentionally NOT ignored.
+# The deployed app loads Models/*.pkl at startup and cannot rebuild them, and the
+# "Test it on real sales" tab needs Data/data_clean.csv and Data/split_indices.csv.
+# Together they are under 3 MB.
+#
+# reports/llm_cache.json is also NOT ignored: committing it lets the demo produce its
+# explanation with no network at all. Delete the file first if you would rather not
+# publish the generated text.

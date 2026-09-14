@@ -1,0 +1,476 @@
+"""
+app.py — the Real Estate Machine (roadmap Day 12).
+
+What this file is, and what it is deliberately NOT
+--------------------------------------------------
+This is the front door of the project: a form, a valuation, and an explanation.
+
+It contains **no modelling logic of its own**. Not one threshold, not one derived
+feature, not one rule about what counts as a large house. Every number shown on
+screen is computed by `explain.py`, which loads the model saved on Day 10 and calls
+the same `preprocessing.py` the model was trained with.
+
+That is the single most important design decision in the whole app, and it is the
+question an examiner is most likely to ask: *how do you know the app preprocesses a
+house exactly the way training did?* The answer is that it cannot do otherwise —
+there is only one copy of the code, imported by both.
+
+    Day 6  preprocessing.py  ->  trained the model      ->  Models/regressor.pkl
+    Day 12 preprocessing.py  ->  values this house      ->  same transformations
+
+Layout
+------
+    Tab 1  Value a house      the demo
+    Tab 2  Test on real sales five rows with a known sale price, so the demo is falsifiable
+    Tab 3  About the model    the honest performance and limitations page
+
+Run it
+------
+    streamlit run app/app.py
+"""
+
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+import streamlit as st
+
+# --------------------------------------------------------------------------
+# Imports from our own modules.
+#
+# Streamlit runs this file as a script, so `app/` is on sys.path already when you
+# launch with `streamlit run app/app.py`. It is NOT on the path if the app is
+# launched from somewhere else (Streamlit Community Cloud does this), so add it
+# explicitly rather than relying on the working directory.
+# --------------------------------------------------------------------------
+APP_DIR = Path(__file__).resolve().parent
+ROOT = APP_DIR.parent
+sys.path.insert(0, str(APP_DIR))
+
+from explain import HouseValuer, REQUIRED_FIELDS  # noqa: E402
+from charts import driver_chart  # noqa: E402
+import llm_explain  # noqa: E402
+
+
+def _load_secrets_into_env() -> None:
+    """Bridge Streamlit Cloud's secrets into the environment (roadmap Day 13).
+
+    Locally the API key comes from `.env`, which `llm_explain` reads with
+    python-dotenv. There is no `.env` on Streamlit Community Cloud - the key is
+    pasted into the app's Secrets box instead, and reaches the app as `st.secrets`.
+
+    Copying those secrets into `os.environ` here means `llm_explain` needs no cloud
+    branch at all: it keeps reading `os.getenv`, and behaves identically in both
+    places. Wrapped in try/except because `st.secrets` raises rather than returning
+    empty when there is no secrets file, which is the normal local case.
+    """
+    import os
+
+    try:
+        for key in ("GEMINI_API_KEY", "GROQ_API_KEY", "GEMINI_MODEL", "GROQ_MODEL"):
+            if key in st.secrets and not os.getenv(key):
+                os.environ[key] = str(st.secrets[key])
+    except Exception:
+        pass
+
+
+_load_secrets_into_env()
+
+MODELS = ROOT / "Models"
+DATA = ROOT / "Data"
+
+st.set_page_config(page_title="Real Estate Machine", layout="wide")
+
+
+# --------------------------------------------------------------------------
+# Loading — done once per session, not once per keystroke
+# --------------------------------------------------------------------------
+@st.cache_resource(show_spinner="Loading the model...")
+def load_valuer() -> HouseValuer:
+    """Load the model, the segmenter and the reference statistics exactly once.
+
+    `@st.cache_resource` is the right decorator here (not `@st.cache_data`): the
+    valuer is a live object holding an unpickled model, not a value to be copied.
+    Streamlit re-runs this whole script top to bottom on every widget change, so
+    without this decorator the app would unpickle a gradient booster every time
+    you moved a slider.
+    """
+    return HouseValuer(MODELS)
+
+
+@st.cache_resource(show_spinner=False)
+def load_explainer(_valuer: HouseValuer):
+    """Force the lazy SHAP explainer to build once, up front.
+
+    Building a TreeExplainer costs about a second. Doing it here means the first
+    valuation is not the one that pays for it, which matters when the first
+    valuation is the one happening in front of an examiner.
+    """
+    try:
+        # Assigned, not left bare: Streamlit's "magic" renders a bare expression, and a
+        # bare `_valuer.explainer` would dump the whole TreeExplainer repr onto the page.
+        _ = _valuer.explainer
+        return True
+    except Exception:
+        return False
+
+
+@st.cache_data(show_spinner=False)
+def load_sales() -> pd.DataFrame | None:
+    """The cleaned dataset, used only by the 'Test on real sales' tab."""
+    path = DATA / "data_clean.csv"
+    if not path.exists():
+        return None
+    return pd.read_csv(path, dtype={"zipcode": str})
+
+
+def money(x: float) -> str:
+    return f"${x:,.0f}"
+
+
+# --------------------------------------------------------------------------
+# Startup checks — fail loudly and usefully, never silently
+# --------------------------------------------------------------------------
+missing = [f for f in ["regressor.pkl", "regressor_config.pkl"] if not (MODELS / f).exists()]
+if missing:
+    st.error(
+        "The app cannot start because these model files are missing from `Models/`: "
+        + ", ".join(f"`{m}`" for m in missing)
+        + ".\n\nRun `Notebooks/09_model_tuning.ipynb` (which saves the regressor) and "
+        "`Notebooks/10_llm_explanation.ipynb` (which saves `reference_stats.pkl`) first."
+    )
+    st.stop()
+
+valuer = load_valuer()
+has_shap = load_explainer(valuer)
+cfg = valuer.config
+ref = valuer.ref
+
+known_zips = sorted(ref.get("known_zipcodes", []))
+known_cities = sorted(ref.get("known_cities", []))
+
+
+# --------------------------------------------------------------------------
+# Header
+# --------------------------------------------------------------------------
+st.title("Real Estate Machine")
+st.caption(
+    f"{cfg['model_name']} trained on {cfg.get('n_train', 3476):,} Washington State sales "
+    f"(May-July 2014). Typical error on houses it had never seen: "
+    f"{cfg['test_MedAPE_%']:.1f}% (median). "
+    "A screening tool, not a formal valuation."
+    if "n_train" in cfg else
+    f"{cfg['model_name']}, trained on Washington State sales from May-July 2014. "
+    f"Typical error on houses it had never seen: {cfg['test_MedAPE_%']:.1f}% (median). "
+    "A screening tool, not a formal valuation."
+)
+
+tab_value, tab_test, tab_about = st.tabs(
+    ["Value a house", "Test it on real sales", "About the model"]
+)
+
+
+# --------------------------------------------------------------------------
+# Tab 1 — the demo
+# --------------------------------------------------------------------------
+def show_evidence(evidence: dict, actual_price: float | None = None):
+    """Render one dossier. Used by both the demo tab and the real-sales tab."""
+    c1, c2, c3 = st.columns([1.1, 1.5, 1])
+    c1.metric("Predicted price", money(evidence["predicted_price"]))
+    # No "$" inside this value: Streamlit renders metric text as markdown, and two dollar
+    # signs in one string are read as LaTeX. The unit goes in the label instead.
+    c2.metric("Honest range, $  (8 of 10 houses)",
+              f"{evidence['range_low']:,.0f} - {evidence['range_high']:,.0f}")
+    if actual_price is None:
+        c3.metric("Implied price per sqft", money(evidence["price_per_sqft"]))
+    else:
+        err = 100 * abs(evidence["predicted_price"] - actual_price) / actual_price
+        c3.metric("Actual sale price", money(actual_price), f"{err:.1f}% error",
+                  delta_color="off")
+
+    if evidence.get("segment"):
+        line = f"**Market segment (Day 7 clustering):** {evidence['segment']}"
+        if evidence.get("segment_typical_error_pct"):
+            line += (f" — typical error for this segment: "
+                     f"{evidence['segment_typical_error_pct']}%")
+        st.markdown(line)
+
+    st.subheader("What moved this valuation")
+    if has_shap:
+        st.pyplot(driver_chart(evidence["drivers"]))
+        st.caption(
+            "SHAP values, converted from log space to a percentage effect on the price. "
+            "They add up to the difference between this house and the average house — "
+            "this is a decomposition of the actual prediction, not a general statement "
+            "about which features matter."
+        )
+    else:
+        st.dataframe(
+            pd.DataFrame(evidence["drivers"])[["label", "value", "pct_effect"]]
+            .rename(columns={"label": "driver", "value": "this house",
+                             "pct_effect": "effect on price (%)"}),
+            hide_index=True,
+        )
+
+    if evidence["flags"]:
+        st.subheader("Warnings")
+        for f in evidence["flags"]:
+            st.warning(f)
+    else:
+        st.success("No warnings were triggered for this house.")
+
+
+with tab_value:
+    left, right = st.columns([1, 1.35], gap="large")
+
+    with left:
+        st.subheader("The house")
+        with st.form("house"):
+            a, b = st.columns(2)
+            bedrooms = a.number_input("Bedrooms", 0, 15, 3, 1)
+            bathrooms = b.number_input("Bathrooms", 0.0, 10.0, 2.0, 0.25)
+            sqft_living = a.number_input("Living area (sqft)", 100, 15000, 1800, 50)
+            sqft_lot = b.number_input("Lot size (sqft)", 100, 500000, 7500, 100)
+            floors = a.number_input("Floors", 1.0, 4.0, 1.0, 0.5)
+            sqft_basement = b.number_input("Basement area (sqft)", 0, 5000, 0, 50)
+            yr_built = a.number_input("Year built", 1850, 2014, 1985, 1)
+            yr_renovated = b.number_input(
+                "Year renovated (0 if never)", 0, 2014, 0, 1)
+            condition = a.slider("Condition", 1, 5, 3,
+                                 help="1 = poor, 5 = excellent")
+            view = b.slider("View rating", 0, 4, 0,
+                            help="0 = no view, 4 = exceptional")
+            waterfront = a.selectbox("Waterfront", [0, 1],
+                                     format_func=lambda v: "Yes" if v else "No")
+
+            city = st.selectbox(
+                "City", known_cities or ["Seattle"],
+                index=(known_cities.index("Seattle") if "Seattle" in known_cities else 0),
+            )
+            zipcode = st.selectbox(
+                "Zip code", known_zips or ["98115"],
+                index=(known_zips.index("98115") if "98115" in known_zips else 0),
+            )
+
+            use_llm = st.checkbox(
+                "Write the explanation with a language model", value=True,
+                help="Unticked, the app writes the same explanation deterministically "
+                     "from the same evidence. Nothing about the valuation changes.",
+            )
+            submitted = st.form_submit_button("Value this house", type="primary")
+
+        st.caption(
+            "City and zip code are limited to the ones the model saw in training. "
+            "Typing an unknown location would not fail — it would quietly fall back to "
+            "the market average, which is the largest driver in the model. A drop-down "
+            "makes that impossible rather than merely warned about."
+        )
+
+    with right:
+        if not submitted:
+            st.info(
+                "Fill in the house on the left and press **Value this house**.\n\n"
+                "The valuation, the range around it, the drivers behind it and any "
+                "warnings will appear here."
+            )
+        else:
+            house = {
+                "bedrooms": int(bedrooms), "bathrooms": float(bathrooms),
+                "sqft_living": int(sqft_living), "sqft_lot": int(sqft_lot),
+                "floors": float(floors), "waterfront": int(waterfront),
+                "view": int(view), "condition": int(condition),
+                "sqft_basement": int(sqft_basement), "yr_built": int(yr_built),
+                "yr_renovated": (int(yr_renovated) or None),
+                "city": city, "zipcode": str(zipcode),
+            }
+
+            problems = HouseValuer.validate(house)
+            if problems:
+                # A refusal, not a guess. See explain.HouseValuer.validate.
+                st.error("This house cannot be valued:\n\n"
+                         + "\n".join(f"- {p}" for p in problems))
+            else:
+                evidence = valuer.evidence(house)
+                show_evidence(evidence)
+
+                st.subheader("The explanation")
+                if use_llm:
+                    with st.spinner("Writing..."):
+                        out = llm_explain.explain_prediction(evidence)
+                else:
+                    out = {"text": llm_explain.fallback_explanation(evidence),
+                           "source": "deterministic", "grounded": True,
+                           "ungrounded_numbers": [], "error": None}
+
+                # Escape the dollar signs before rendering. Streamlit renders markdown,
+                # and a pair of unescaped "$" in the same paragraph is read as LaTeX -
+                # which silently swallows "$565,600 ... $314" into a maths block.
+                st.write(out["text"].replace("$", r"\$"))
+
+                source = out["source"]
+                if source in ("gemini", "groq"):
+                    st.caption(
+                        f"Written by {source}. Every number in that paragraph was "
+                        "checked against the evidence above before it was shown to you."
+                    )
+                elif source == "cache":
+                    st.caption("Served from the local cache (this house has been valued "
+                               "before). No network call was made.")
+                elif source == "deterministic":
+                    st.caption("Written in Python from the evidence above. No model call.")
+                else:
+                    st.caption(
+                        f"Written in Python from the evidence above, because the language "
+                        f"model was not used: {out['error']}."
+                    )
+                    if out.get("ungrounded_numbers"):
+                        st.error(
+                            "The language model's answer was rejected: it contained "
+                            f"{out['ungrounded_numbers']}, which are not in the evidence. "
+                            "The deterministic explanation is shown instead."
+                        )
+
+
+# --------------------------------------------------------------------------
+# Tab 2 — the demo you cannot fake
+# --------------------------------------------------------------------------
+with tab_test:
+    st.subheader("Five real sales, and what the model would have said")
+    st.markdown(
+        "A demo where you type in a house and admire the answer proves nothing — "
+        "there is no right answer to compare against. These five houses are **test-set "
+        "rows**: real sales the model never saw during training. The sale price is "
+        "known, so every prediction here is falsifiable."
+    )
+
+    sales = load_sales()
+    split_path = DATA / "split_indices.csv"
+
+    if sales is None or not split_path.exists():
+        st.info("`Data/data_clean.csv` and `Data/split_indices.csv` are needed for this "
+                "tab and are not present in this deployment.")
+    else:
+        split = pd.read_csv(split_path, index_col="row")["split"]
+        test_rows = sales[split.values == "test"].reset_index(drop=True)
+
+        seed = st.number_input("Sample seed", 0, 9999, 42, 1,
+                               help="Change it to draw a different five houses. "
+                                    "Every draw comes from the test set.")
+        picks = test_rows.sample(5, random_state=int(seed))
+
+        rows = []
+        for _, r in picks.iterrows():
+            house = {
+                "bedrooms": int(r["bedrooms"]), "bathrooms": float(r["bathrooms"]),
+                "sqft_living": int(r["sqft_living"]), "sqft_lot": int(r["sqft_lot"]),
+                "floors": float(r["floors"]), "waterfront": int(r["waterfront"]),
+                "view": int(r["view"]), "condition": int(r["condition"]),
+                "sqft_basement": int(r["sqft_basement"]), "yr_built": int(r["yr_built"]),
+                "yr_renovated": (int(r["yr_renovated"])
+                                 if pd.notna(r.get("yr_renovated")) and r["yr_renovated"] > 0
+                                 else None),
+                "city": str(r["city"]), "zipcode": str(r["zipcode"]),
+            }
+            try:
+                ev = valuer.evidence(house, top_k=3)
+            except ValueError as exc:
+                rows.append({"house": "refused", "why": str(exc)})
+                continue
+            actual = float(r["price"])
+            rows.append({
+                "city": house["city"],
+                "zip": house["zipcode"],
+                "beds": house["bedrooms"],
+                "sqft": house["sqft_living"],
+                "actual sale": actual,
+                "predicted": ev["predicted_price"],
+                "error %": 100 * (ev["predicted_price"] - actual) / actual,
+                "segment": ev["segment"],
+            })
+
+        table = pd.DataFrame(rows)
+        st.dataframe(
+            table.style.format({"actual sale": "${:,.0f}", "predicted": "${:,.0f}",
+                                "error %": "{:+.1f}%", "sqft": "{:,.0f}"}),
+            hide_index=True,
+        )
+
+        med = table["error %"].abs().median()
+        st.markdown(
+            f"Median absolute error on these five: **{med:.1f}%**, against "
+            f"**{cfg['test_MedAPE_%']:.1f}%** across the whole test set of "
+            f"{len(test_rows):,} houses. Five houses is far too small a sample to "
+            "judge a model on — change the seed and this number moves several points. "
+            "The test-set figure is the one to quote."
+        )
+
+
+# --------------------------------------------------------------------------
+# Tab 3 — the honesty page
+# --------------------------------------------------------------------------
+with tab_about:
+    st.subheader("How well it actually works")
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("Typical error (median)", f"{cfg['test_MedAPE_%']:.1f}%")
+    m2.metric("Mean error", f"{cfg['test_MAPE_%']:.1f}%")
+    m3.metric("Within 10% of sale price", f"{cfg['test_PPE10_%']:.0f}%")
+    m4.metric("R2 (log price)", f"{cfg['test_R2_log']:.3f}")
+
+    st.markdown(
+        f"""
+**The model.** {cfg['model_name']} — `{cfg.get('sklearn_params', {})}` — predicting
+`{cfg['target']}` and back-transformed with `{cfg['back_transform']}`. Chosen on Day 10
+over Ridge, Random Forest and XGBoost. It beat Ridge by about 2 percentage points of
+median error, a difference that survived a paired significance test. It did **not**
+beat XGBoost by a distinguishable margin; the tie was broken on the IAAO ratio study
+below, which XGBoost fails.
+
+**The IAAO ratio study.** The assessment industry judges a valuation model on three
+statistics rather than on accuracy alone:
+median ratio **{cfg['iaao']['median_ratio']:.3f}** (target 0.90-1.10, no systematic
+over- or under-valuation), COD **{cfg['iaao']['cod']:.2f}** (target 5-15, consistency),
+PRD **{cfg['iaao']['prd']:.3f}** (target 0.98-1.03, cheap and expensive homes treated
+alike). This model passes all three. It is the only one of the four that does.
+"""
+    )
+
+    st.subheader("Where it is weak — say this before anyone asks")
+    for w in cfg.get("known_weaknesses", []):
+        st.markdown(f"- {w}")
+    st.markdown(
+        """
+- Only ten weeks of 2014 data: no seasonality, no market trend, and the price level is
+  eleven years out of date.
+- Washington State only. It will not generalise to another market.
+- No building grade and no coordinates, so location is captured coarsely by zip code.
+- About 33 waterfront homes in the whole dataset — too few to be confident about any of them.
+"""
+    )
+
+    if cfg.get("segment_MedAPE"):
+        st.subheader("Typical error by market segment")
+        seg = (pd.Series(cfg["segment_MedAPE"]).sort_values()
+               .rename("median error %").to_frame())
+        st.dataframe(seg.style.format({"median error %": "{:.1f}%"}))
+
+    st.subheader("How a valuation is produced")
+    st.code(
+        "your inputs\n"
+        "  -> preprocessing.engineer_features()   the same function that built the training set\n"
+        "  -> the fitted pipeline                 scaling + smoothed target encoding, fitted on TRAIN only\n"
+        "  -> " + cfg["model_name"] + "\n"
+        "  -> np.expm1()                          back to dollars\n"
+        "  -> SHAP                                what moved this particular prediction\n"
+        "  -> deterministic checks                the warnings\n"
+        "  -> language model                      turns all of the above into sentences\n"
+        "  -> grounding check                     rejects any number it was not given",
+        language="text",
+    )
+    st.caption(
+        "The language model is the last step and the least important one. It cannot "
+        "change a valuation; it can only describe one, and every figure it writes is "
+        "verified against the evidence before you see it."
+    )

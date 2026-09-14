@@ -1,0 +1,17 @@
+{
+ "[2.0, 3, \"Seattle\", 3, 1.0, 500, 1800, 7500, 0, 0, 1985, \"98115\"]": {
+  "text": "The model values your home at $564,600. This figure implies a price of $314 per square foot. The honest range, where eight out of ten similar houses fall, spans from $446,600 to $706,600. This wide spread reflects the inherent uncertainty in predicting individual property values rather than a specific flaw in your house.\n\nThree factors most influenced this estimate. Living in zip code 98115 raised the valuation by 21.6%, while being in Seattle added another 7.9%. Conversely, the 1,800 square feet of living space lowered the value by 9.0%. These adjustments reflect how the model weighs location against physical size for this specific property type.\n\nYou should treat this figure with caution. On unseen houses, this model\u2019s typical error is 10.5%, and only 48% of valuations were within 10% of the true sale price. For your specific market segment, the typical error is 9.7%. No warnings were triggered for your house, but the model\u2019s general performance indicates significant potential deviation from the actual market price.",
+  "source": "groq",
+  "grounded": true
+ },
+ "[1.0, 2, \"Auburn\", 3, 1.0, 0, 860, 6000, 0, 0, 1955, \"98002\"]": {
+  "text": "The model values your home at $172,700. For eight out of ten similar houses, the true price falls between $136,600 and $216,100. This implies a price of $201 per square foot for your 860 square foot property.\n\nThree factors most significantly reduced this figure. Living in zip code 98002 lowered the valuation by 35.0%. Your living area of 860 square feet accounted for a 28.4% reduction. Being located in Auburn further decreased the value by 12.0%. These elements combined to shape the final estimate.\n\nYou should treat this number with caution. The model\u2019s typical error on unseen houses is 10.5%, and only 48% of predictions were within 10% of the actual sale price. Crucially, this valuation sits in the cheapest tenth of the market, where the model is known to be optimistic by roughly 12%. Therefore, you must treat this figure as an upper bound rather than a precise estimate.",
+  "source": "groq",
+  "grounded": true
+ },
+ "[3.5, 5, \"Bellevue\", 4, 2.0, 800, 4200, 12000, 4, 1, 2005, \"98004\"]": {
+  "text": "The model values your home at $3,471,300. For eight out of ten similar houses, the true price falls between $2,746,100 and $4,344,700. This wide spread reflects the uncertainty inherent in the prediction.\n\nThree factors drove this figure up significantly. Your location in zip code 98004 added 87.5% to the base value. The 4,200 square feet of living space contributed 74.4%, while the top-tier view rating added 38.8%. These specific attributes pushed the valuation well above standard levels for the area.\n\nYou should treat this number with extreme caution. The model is systematically conservative for the most expensive tenth of the market, so view this as a floor rather than a ceiling. The implied price per square foot of $827 is far from the zip code median of $450. Furthermore, waterfront properties are rare in the training data, meaning this valuation rests on almost no comparable sales. Finally, this model performs worst on premium view properties, with a typical error of 17.9%. Use this figure only for screening, not as a quote.",
+  "source": "groq",
+  "grounded": true
+ }
+}
