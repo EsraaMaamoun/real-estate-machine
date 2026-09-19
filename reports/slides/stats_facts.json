@@ -1,0 +1,85 @@
+{
+ "medape_gb": 10.542559546626567,
+ "medape_ridge": 12.518543863797953,
+ "medape_xgb": 10.95049804687504,
+ "vs_ridge": {
+  "diff_pp": -1.9759843171713865,
+  "ci_lo": -3.06423502077805,
+  "ci_hi": -0.8883521732570091,
+  "p": 1.1241538618204751e-07,
+  "verdict": "real"
+ },
+ "vs_xgb": {
+  "diff_pp": -0.40793850024847256,
+  "ci_lo": -1.245339210759426,
+  "ci_hi": 0.14990286690138563,
+  "p": 0.8354389633278712,
+  "verdict": "not distinguishable"
+ },
+ "gb_r2": 0.8626836078472679,
+ "xgb_r2": 0.8668202178467946,
+ "gb_mape": 14.580272871049631,
+ "xgb_mape": 14.3818987712244,
+ "gb_mae": 82543.2329879025,
+ "xgb_mae": 81446.68455120828,
+ "iaao": {
+  "GB (tuned)": {
+   "median_ratio": 0.9982642774716544,
+   "cod": 14.604035485177384,
+   "prd": 1.0297650877462527
+  },
+  "Ridge": {
+   "median_ratio": 0.9977951462674209,
+   "cod": 16.868324777627315,
+   "prd": 1.0159846638729968
+  },
+  "XGB (tuned)": {
+   "median_ratio": 0.9969712415495218,
+   "cod": 14.605000424023688,
+   "prd": 1.0285277101590318
+  }
+ },
+ "iaao_notebook09": {
+  "Ridge baseline": {
+   "median_ratio": 0.9978,
+   "cod": 16.8683,
+   "prd": 1.016,
+   "pass": [
+    true,
+    false,
+    true
+   ]
+  },
+  "RF (tuned)": {
+   "median_ratio": 1.002,
+   "cod": 14.9468,
+   "prd": 1.0431,
+   "pass": [
+    true,
+    true,
+    false
+   ]
+  },
+  "GB (tuned)": {
+   "median_ratio": 0.9983,
+   "cod": 14.604,
+   "prd": 1.0298,
+   "pass": [
+    true,
+    true,
+    true
+   ]
+  },
+  "XGB (tuned)": {
+   "median_ratio": 0.9975,
+   "cod": 14.4154,
+   "prd": 1.0297,
+   "pass": [
+    true,
+    true,
+    true
+   ]
+  }
+ },
+ "iaao_note": "Two of four pass all three. The ratio study eliminates Ridge (COD) and RF (PRD); it does not separate GB from XGB."
+}

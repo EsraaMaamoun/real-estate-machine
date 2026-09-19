@@ -1,5 +1,5 @@
 """
-app.py — the Real Estate Machine (roadmap Day 12).
+app.py — the Real Estate Machine.
 
 What this file is, and what it is deliberately NOT
 --------------------------------------------------
@@ -7,7 +7,7 @@ This is the front door of the project: a form, a valuation, and an explanation.
 
 It contains **no modelling logic of its own**. Not one threshold, not one derived
 feature, not one rule about what counts as a large house. Every number shown on
-screen is computed by `explain.py`, which loads the model saved on Day 10 and calls
+screen is computed by `explain.py`, which loads the trained model and calls
 the same `preprocessing.py` the model was trained with.
 
 That is the single most important design decision in the whole app, and it is the
@@ -15,8 +15,8 @@ question an examiner is most likely to ask: *how do you know the app preprocesse
 house exactly the way training did?* The answer is that it cannot do otherwise —
 there is only one copy of the code, imported by both.
 
-    Day 6  preprocessing.py  ->  trained the model      ->  Models/regressor.pkl
-    Day 12 preprocessing.py  ->  values this house      ->  same transformations
+    training  preprocessing.py  ->  trained the model      ->  Models/regressor.pkl
+    serving   preprocessing.py  ->  values this house      ->  same transformations
 
 Layout
 ------
@@ -56,7 +56,7 @@ import llm_explain  # noqa: E402
 
 
 def _load_secrets_into_env() -> None:
-    """Bridge Streamlit Cloud's secrets into the environment (roadmap Day 13).
+    """Bridge Streamlit Cloud's secrets into the environment.
 
     Locally the API key comes from `.env`, which `llm_explain` reads with
     python-dotenv. There is no `.env` on Streamlit Community Cloud - the key is
@@ -154,9 +154,36 @@ known_cities = sorted(ref.get("known_cities", []))
 
 
 # --------------------------------------------------------------------------
-# Header
+# Identity
+#
+# `.streamlit/config.toml` carries the colours; this carries the typography and
+# the two details that make the app and the slide deck read as one product: a
+# serif headline and an amber rule under an eyebrow label.
+#
+# Deliberately small. Streamlit renames its internal CSS classes between
+# versions, so anything that targets them breaks on upgrade; everything below
+# targets plain HTML elements or documented test ids, and the app is perfectly
+# usable if a rule silently stops applying.
 # --------------------------------------------------------------------------
+BRAND_CSS = """
+<style>
+  h1, h2, h3 { font-family: Cambria, Georgia, "Times New Roman", serif !important;
+               letter-spacing: -0.01em; }
+  h1 { font-size: 2.5rem !important; margin-bottom: 0.1rem !important; }
+  [data-testid="stMetricValue"] {
+      font-family: Cambria, Georgia, serif !important; font-weight: 700; }
+  [data-testid="stMetricLabel"] { color: #6B6358 !important; }
+  .rem-eyebrow { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.16em;
+                 color: #C07214; text-transform: uppercase; margin-bottom: 0.15rem; }
+  .rem-rule { height: 3px; width: 64px; background: #C07214; margin: 0.55rem 0 0.9rem 0; }
+  div[data-testid="stAlert"] { border-radius: 8px; }
+</style>
+"""
+st.markdown(BRAND_CSS, unsafe_allow_html=True)
+
+st.markdown('<div class="rem-eyebrow">Valuation tool</div>', unsafe_allow_html=True)
 st.title("Real Estate Machine")
+st.markdown('<div class="rem-rule"></div>', unsafe_allow_html=True)
 st.caption(
     f"{cfg['model_name']} trained on {cfg.get('n_train', 3476):,} Washington State sales "
     f"(May-July 2014). Typical error on houses it had never seen: "
@@ -191,8 +218,17 @@ def show_evidence(evidence: dict, actual_price: float | None = None):
         c3.metric("Actual sale price", money(actual_price), f"{err:.1f}% error",
                   delta_color="off")
 
+    # Which houses that range was measured on. The band is segment-specific when
+    # Models/segment_intervals.pkl is present, and saying so is the difference
+    # between a range and a guess dressed as one.
+    st.caption(
+        f"The range is the 10th-to-90th percentile of this model's error on "
+        f"{evidence.get('range_basis', 'all houses in the test set')} "
+        f"({evidence.get('range_width_pp', 47)} percentage points wide)."
+    )
+
     if evidence.get("segment"):
-        line = f"**Market segment (Day 7 clustering):** {evidence['segment']}"
+        line = f"**Market segment:** {evidence['segment']}"
         if evidence.get("segment_typical_error_pct"):
             line += (f" — typical error for this segment: "
                      f"{evidence['segment_typical_error_pct']}%")
@@ -209,7 +245,7 @@ def show_evidence(evidence: dict, actual_price: float | None = None):
         )
     else:
         st.dataframe(
-            pd.DataFrame(evidence["drivers"])[["label", "value", "pct_effect"]]
+            pd.DataFrame(evidence["drivers"])[["label", "value", "pct_effect"]]  # pyright: ignore[reportCallIssue]
             .rename(columns={"label": "driver", "value": "this house",
                              "pct_effect": "effect on price (%)"}),
             hide_index=True,
@@ -363,14 +399,17 @@ with tab_test:
 
         rows = []
         for _, r in picks.iterrows():
+            # r is a Series from iterrows(), so pandas-stubs cannot narrow r["x"] to a
+            # scalar; at runtime every field here is one, so the int()/float() calls
+            # below are correct despite the wide static type pyright infers for r[...].
             house = {
-                "bedrooms": int(r["bedrooms"]), "bathrooms": float(r["bathrooms"]),
-                "sqft_living": int(r["sqft_living"]), "sqft_lot": int(r["sqft_lot"]),
-                "floors": float(r["floors"]), "waterfront": int(r["waterfront"]),
-                "view": int(r["view"]), "condition": int(r["condition"]),
-                "sqft_basement": int(r["sqft_basement"]), "yr_built": int(r["yr_built"]),
-                "yr_renovated": (int(r["yr_renovated"])
-                                 if pd.notna(r.get("yr_renovated")) and r["yr_renovated"] > 0
+                "bedrooms": int(r["bedrooms"]), "bathrooms": float(r["bathrooms"]),  # pyright: ignore[reportArgumentType]
+                "sqft_living": int(r["sqft_living"]), "sqft_lot": int(r["sqft_lot"]),  # pyright: ignore[reportArgumentType]
+                "floors": float(r["floors"]), "waterfront": int(r["waterfront"]),  # pyright: ignore[reportArgumentType]
+                "view": int(r["view"]), "condition": int(r["condition"]),  # pyright: ignore[reportArgumentType]
+                "sqft_basement": int(r["sqft_basement"]), "yr_built": int(r["yr_built"]),  # pyright: ignore[reportArgumentType]
+                "yr_renovated": (int(r["yr_renovated"])  # pyright: ignore[reportArgumentType]
+                                 if pd.notna(r.get("yr_renovated")) and r["yr_renovated"] > 0  # pyright: ignore[reportGeneralTypeIssues]
                                  else None),
                 "city": str(r["city"]), "zipcode": str(r["zipcode"]),
             }
@@ -379,7 +418,7 @@ with tab_test:
             except ValueError as exc:
                 rows.append({"house": "refused", "why": str(exc)})
                 continue
-            actual = float(r["price"])
+            actual = float(r["price"])  # pyright: ignore[reportArgumentType]
             rows.append({
                 "city": house["city"],
                 "zip": house["zipcode"],
@@ -422,7 +461,7 @@ with tab_about:
     st.markdown(
         f"""
 **The model.** {cfg['model_name']} — `{cfg.get('sklearn_params', {})}` — predicting
-`{cfg['target']}` and back-transformed with `{cfg['back_transform']}`. Chosen on Day 10
+`{cfg['target']}` and back-transformed with `{cfg['back_transform']}`. Chosen
 over Ridge, Random Forest and XGBoost. It beat Ridge by about 2 percentage points of
 median error, a difference that survived a paired significance test. It did **not**
 beat XGBoost by a distinguishable margin; the tie was broken on the IAAO ratio study

@@ -1,9 +1,9 @@
-# Deployment — roadmap Day 13
+# Deployment
 
 Everything needed to turn `app/app.py` into a URL, in the order it has to happen.
 Work through it top to bottom; each section ends with a check you can actually see.
 
-**Deliverables of this day:** a live app URL, a public Kaggle notebook, and a
+**Deliverables:** a live app URL, a public Kaggle notebook, and a
 60-second screen recording of the demo.
 
 ---
@@ -34,7 +34,7 @@ Graduation Project/
 │   ├── llm_explain.py         language layer
 │   ├── preprocessing.py       features — the same file that trained the model
 │   └── requirements.txt       what the CLOUD installs (not the project one)
-├── Models/                    *.pkl — MUST be committed, the app cannot rebuild them
+├── Models/                    the six .pkl files the app loads — MUST be committed
 ├── Data/
 │   ├── data_clean.csv         needed by the "Test it on real sales" tab
 │   └── split_indices.csv      so that tab draws from the test set only
@@ -46,8 +46,12 @@ Graduation Project/
 └── DEPLOY.md                  this file
 ```
 
-**`Models/*.pkl` must be in the repository.** They total under 2 MB. The app has no
-way to retrain, and Streamlit Cloud will not run your notebooks.
+**The six `.pkl` files the app loads must be in the repository.** `.gitignore` keeps
+exactly those and ignores every other file in `Models/` and `Data/`; section 1 of
+notebook 12 lists them and fails if one is ignored. They total under 2 MB. The app has
+no way to retrain, and Streamlit Cloud will not run your notebooks. One of them,
+`segment_intervals.pkl`, does not crash the app when missing — the app quietly falls
+back to the global range, so the live numbers would differ from your local ones.
 
 **`.env` must not be.** See section 3.
 
@@ -116,8 +120,10 @@ stranger. That is the only reliable way to see what is actually public.
 1. Go to <https://share.streamlit.io> and sign in with GitHub.
 2. **New app** → pick the repository, branch `main`.
 3. **Main file path:** `app/app.py`
-4. **Advanced settings → Python version:** `3.10` (match your local Python; pandas
-   and scikit-learn wheels differ between versions).
+4. **Advanced settings → Python version:** `3.12` — the same as your local Python.
+   Not 3.10: `shap` needs 3.12 or newer and pandas, numpy and scikit-learn need 3.11
+   or newer, so the install fails on 3.10. Section 2 of notebook 12 prints the minimum
+   for your exact pins.
 5. **Advanced settings → Secrets:** paste, in TOML, whichever key you have:
 
    ```toml
@@ -201,8 +207,8 @@ app/app.py` costs nothing and does not depend on anyone else's servers.
 - [ ] `app/requirements.txt` regenerated with exact versions
 - [ ] `git status` shows no `.env` and no `venv/`
 - [ ] Repository public, checked in a private browser window
-- [ ] `Models/*.pkl` and `Data/data_clean.csv` visible on GitHub
-- [ ] App deployed, main file `app/app.py`, Python 3.10
+- [ ] The six `Models/*.pkl` files and `Data/data_clean.csv` visible on GitHub
+- [ ] App deployed, main file `app/app.py`, Python 3.12
 - [ ] API key in Streamlit Secrets, not in the repository
 - [ ] Live URL opens on your phone over mobile data
 - [ ] A valuation on the live app matches the local one

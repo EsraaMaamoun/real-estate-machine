@@ -1,0 +1,89 @@
+{
+ "median_price": 471000.0,
+ "n": 4345,
+ "zip_all_n": 77,
+ "zip_thick_n": 58,
+ "zip_lo": 142.25341310016876,
+ "zip_hi": 458.2105837424986,
+ "zip_ratio": 3.2210867476328766,
+ "zip_lo_name": "98002",
+ "zip_hi_name": "98109",
+ "same_house_sqft": 2000,
+ "same_house_lo": 284506.8262003375,
+ "same_house_hi": 916421.1674849972,
+ "zip_lo_city": "Auburn",
+ "zip_hi_city": "Seattle",
+ "ols_r2": 0.7789624917371063,
+ "bathroom": {
+  "pct": 8.584280358436125,
+  "usd": 40431.96048823415
+ },
+ "bedroom": {
+  "pct": -2.4576848020332664,
+  "usd": -11575.695417576684
+ },
+ "condition": {
+  "pct": 6.891760254005108,
+  "usd": 32460.19079636406
+ },
+ "view_point": {
+  "pct": 9.532926501645056,
+  "usd": 44900.083822748216
+ },
+ "basement_100": {
+  "pct": -1.2677054817107014,
+  "usd": -5970.892818857404
+ },
+ "age_year": {
+  "pct": 0.14411736246100482,
+  "usd": 678.7927771913327
+ },
+ "sqft_100": {
+  "pct": 3.2710500420200628,
+  "usd": 15406.645697914495
+ },
+ "n_renovated": 213,
+ "reno_raw_pct": 23.067351454545037,
+ "reno_age_renovated": 74.0,
+ "reno_age_not": 37.0,
+ "reno_within_zips": 16,
+ "reno_within_median_pct": 10.119504265413271,
+ "reno_within_negative": 6,
+ "reno_breakeven_usd": 47662.86509009651,
+ "price_bands": [
+  {
+   "band": "Entry, under $350k",
+   "n": 1228,
+   "share": 28.262370540851556,
+   "ppsf": 172.60574271246162,
+   "sqft": 1460.0
+  },
+  {
+   "band": "Mid, $350-650k",
+   "n": 1968,
+   "share": 45.293440736478715,
+   "ppsf": 255.1866883116883,
+   "sqft": 1910.0
+  },
+  {
+   "band": "Upper, $650k-1.2m",
+   "n": 933,
+   "share": 21.47295742232451,
+   "ppsf": 288.4423076923077,
+   "sqft": 2750.0
+  },
+  {
+   "band": "Luxury, above $1.2m",
+   "n": 216,
+   "share": 4.971231300345225,
+   "ppsf": 420.7646694608497,
+   "sqft": 3830.0
+  }
+ ],
+ "share_under_650k": 73.55581127733026,
+ "ppsf_ratio_lux_entry": 2.437721149068534,
+ "n_waterfront": 29,
+ "n_view_positive": 431,
+ "waterfront_median": 1150000.0,
+ "nonwaterfront_median": 469925.0
+}

@@ -14,14 +14,18 @@ still only one copy of the drawing code.
 
 from __future__ import annotations
 
-# The diverging pair. One hue for "raised the valuation", one for "lowered it", with
-# a neutral axis between them - the honest encoding for a quantity with a natural
-# zero. Two hues, never a gradient of many.
-UP = "#2a78d6"
-DOWN = "#e34948"
-AXIS = "#8a8985"
-INK = "#52514e"
-RULE = "#d8d7d2"
+# The diverging pair, from the project's design system (scripts/design.py).
+# Teal for "raised the valuation", brick for "lowered it", a neutral axis between
+# them - two hues that read as opposite, which is what a quantity with a natural
+# zero needs. Both were checked against the paper surface with the palette
+# validator rather than chosen by eye.
+UP = "#0094A0"      # teal
+DOWN = "#B23A20"    # brick
+AXIS = "#6B6358"
+INK = "#191714"
+MUTED = "#6B6358"
+RULE = "#E2DCD1"
+PAPER = "#FBFAF7"
 
 
 def driver_chart(drivers: list[dict]):
@@ -41,7 +45,9 @@ def driver_chart(drivers: list[dict]):
     values = [float(x["pct_effect"]) for x in d]
     colors = [UP if v >= 0 else DOWN for v in values]
 
-    fig, ax = plt.subplots(figsize=(7, 0.62 * len(d) + 0.9))
+    fig, ax = plt.subplots(figsize=(7, 0.62 * len(d) + 0.9),
+                           facecolor=PAPER)
+    ax.set_facecolor(PAPER)
     ax.barh(labels, values, color=colors, height=0.62)
     ax.axvline(0, color=AXIS, linewidth=1)
 

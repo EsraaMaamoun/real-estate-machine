@@ -28,11 +28,27 @@ desktop.ini
 # Large intermediates (keep the raw source files tracked)
 *.pkl.bak
 
-# NOTE (Day 13): Models/ and Data/ are intentionally NOT ignored.
-# The deployed app loads Models/*.pkl at startup and cannot rebuild them, and the
-# "Test it on real sales" tab needs Data/data_clean.csv and Data/split_indices.csv.
-# Together they are under 3 MB.
-#
-# reports/llm_cache.json is also NOT ignored: committing it lets the demo produce its
+# Personal prep / process notes — not app documentation, not meant to be published.
+SETUP.md
+DEFENSE.md
+reports/DECK_REVIEW.md
+
+# Models/ and Data/: only the files the deployed app actually needs are committed.
+# Everything else in these two folders is an intermediate artifact from the dev
+# notebooks (baseline comparisons, alternate models, raw/intermediate data) that the
+# app never reads — ignored by default, with the required files explicitly kept.
+Models/*
+!Models/regressor.pkl
+!Models/regressor_config.pkl
+!Models/cluster_pipeline.pkl
+!Models/cluster_config.pkl
+!Models/reference_stats.pkl
+!Models/segment_intervals.pkl
+
+Data/*
+!Data/data_clean.csv
+!Data/split_indices.csv
+
+# reports/llm_cache.json is NOT ignored: committing it lets the demo produce its
 # explanation with no network at all. Delete the file first if you would rather not
 # publish the generated text.

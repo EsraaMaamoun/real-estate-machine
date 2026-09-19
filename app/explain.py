@@ -3,19 +3,19 @@ explain.py — the evidence layer.
 
 Why this exists
 ---------------
-Day 11 adds a language model that writes a paragraph about a valuation. A language
+The app's language model writes a paragraph about a valuation. A language
 model given no evidence invents evidence. So before any prompt is built, this module
 turns one house into a small, fully-computed dossier:
 
     the prediction, an honest range around it, the market segment, the top drivers
     from SHAP, and a list of deterministic warnings
 
-Every number in that dossier is computed here, in Python, from the model saved on
-Day 10. The language model is never asked to work anything out — it is only asked to
+Every number in that dossier is computed here, in Python, from the trained model.
+The language model is never asked to work anything out — it is only asked to
 put these numbers into sentences. That separation is the whole design, and it is what
 makes the AI layer defensible rather than decorative.
 
-This module is also what the Day 12 Streamlit app calls. The app must never re-derive
+This module is also what the Streamlit app calls. The app must never re-derive
 a feature or a threshold of its own.
 
 Usage
@@ -51,7 +51,7 @@ REQUIRED_FIELDS = [
     "yr_built", "city", "zipcode",
 ]
 
-# Day 6 kept both a raw and a logged version of the two area columns, so the model
+# Feature engineering kept both a raw and a logged version of the two area columns, so the model
 # splits the size effect between them. SHAP is additive, so the honest way to show
 # that to a human is to add the two contributions back together and report one
 # "living area" figure instead of two half-figures that look like separate reasons.
@@ -83,7 +83,7 @@ READABLE = {
 
 
 class HouseValuer:
-    """Loads the Day 10 artifacts once and values single houses."""
+    """Loads the trained artifacts once and values single houses."""
 
     def __init__(self, models_dir: str | Path | None = None):
         self.models_dir = Path(models_dir or DEFAULT_MODELS_DIR)
@@ -94,7 +94,17 @@ class HouseValuer:
         self.output_order = self.config["output_order"]
         self.lo_pct, self.hi_pct = self.config["interval_pct_10_90"]
 
-        # Optional: the Day 7 segmenter. Absent is fine, the evidence just omits it.
+        # Optional: per-segment prediction bands (Models/segment_intervals.pkl).
+        #
+        # The global 10-90 band is an average over houses the model handles very
+        # differently: it is 38 points wide for an Established Family Home and 82
+        # points wide for a Premium View Property. Quoting one band for both
+        # understates the risk on exactly the properties where being wrong is most
+        # expensive. When the file is present the band is chosen by segment; when it
+        # is not, the global band is used and nothing breaks.
+        self.intervals = self._maybe("segment_intervals.pkl") or {}
+
+        # Optional: the market segmenter. Absent is fine, the evidence just omits it.
         self.cluster_pipe = self._maybe("cluster_pipeline.pkl")
         self.cluster_cfg = self._maybe("cluster_config.pkl")
 
@@ -157,7 +167,7 @@ class HouseValuer:
 
     # -- the pieces of the dossier ----------------------------------------
     def segment_of(self, engineered: pd.DataFrame) -> str | None:
-        """Day 7's market segment, if the clustering artifacts are present."""
+        """The market segment, if the clustering artifacts are present."""
         if self.cluster_pipe is None or self.cluster_cfg is None:
             return None
         label = int(self.cluster_pipe.predict(engineered[self.cluster_cfg["features"]])[0])
@@ -172,19 +182,21 @@ class HouseValuer:
         if name == "city_te":
             return str(raw["city"])
         v = raw[name]
+        # v's static type is a wide pandas union (Series indexing cannot narrow to a
+        # scalar), but at runtime raw[name] on a per-row Series is always a scalar.
         if name in ("sqft_living", "sqft_lot", "sqft_basement", "sqft_per_room"):
-            return f"{int(round(float(v))):,} sqft"
+            return f"{int(round(float(v))):,} sqft"  # pyright: ignore[reportArgumentType]
         if name in ("house_age", "years_since_reno"):
-            return f"{int(round(float(v)))} years"
+            return f"{int(round(float(v)))} years"  # pyright: ignore[reportArgumentType]
         if name == "view":
-            return f"{int(v)} out of 4"
+            return f"{int(v)} out of 4"  # pyright: ignore[reportArgumentType]
         if name == "condition":
-            return f"{int(v)} out of 5"
+            return f"{int(v)} out of 5"  # pyright: ignore[reportArgumentType]
         if name in ("waterfront", "has_basement", "was_renovated"):
-            return "yes" if float(v) else "no"
+            return "yes" if float(v) else "no"  # pyright: ignore[reportArgumentType]
         if name == "basement_ratio":
-            return f"{100 * float(v):.0f}% of the floor area"
-        return f"{float(v):g}"
+            return f"{100 * float(v):.0f}% of the floor area"  # pyright: ignore[reportArgumentType]
+        return f"{float(v):g}"  # pyright: ignore[reportArgumentType]
 
     def drivers(self, engineered: pd.DataFrame, top_k: int = 5) -> list[dict]:
         """Top SHAP contributions for this house, converted to percentage effects.
@@ -277,6 +289,19 @@ class HouseValuer:
             )
         return flags
 
+    def band_for(self, segment: str | None):
+        """The 10-90 percentage-error band to quote for this house.
+
+        Returns (low, high, basis) where basis names, in plain English, the group of
+        houses the band was measured on - so the app can say what the range is based
+        on rather than implying it is universal.
+        """
+        by_seg = (self.intervals or {}).get("by_segment", {})
+        if segment and segment in by_seg:
+            lo, hi = by_seg[segment]
+            return float(lo), float(hi), f"houses in the {segment} segment"
+        return self.lo_pct, self.hi_pct, "all houses in the test set"
+
     # -- the public entry point -------------------------------------------
     def evidence(self, house: dict, top_k: int = 5) -> dict:
         """One house in, one fully-computed dossier out.
@@ -294,14 +319,17 @@ class HouseValuer:
 
         segment = self.segment_of(engineered)
         seg_err = (self.config.get("segment_MedAPE") or {}).get(segment)
+        band_lo, band_hi, band_basis = self.band_for(segment)
 
         return {
             "model_name": self.config["model_name"],
             "house": {k: house[k] for k in REQUIRED_FIELDS},
             "house_age": int(engineered.iloc[0]["house_age"]),
             "predicted_price": round(price, -2),
-            "range_low": round(price / (1 + self.hi_pct), -2),
-            "range_high": round(price / (1 + self.lo_pct), -2),
+            "range_low": round(price / (1 + band_hi), -2),
+            "range_high": round(price / (1 + band_lo), -2),
+            "range_basis": band_basis,
+            "range_width_pp": round(100 * (band_hi - band_lo)),
             "price_per_sqft": round(price / house["sqft_living"]),
             "typical_error_pct": round(self.config["test_MedAPE_%"], 1),
             "within_10pct_of_sale_price": round(self.config["test_PPE10_%"]),

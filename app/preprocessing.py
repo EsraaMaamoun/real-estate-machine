@@ -3,7 +3,7 @@ preprocessing.py — the single source of truth for feature engineering.
 
 Why this lives in app/ and not inside the notebook
 --------------------------------------------------
-On Day 12 the Streamlit app has to transform a single user-entered house in
+The Streamlit app has to transform a single user-entered house in
 EXACTLY the same way the training data was transformed. If the transformer
 classes were defined inside a notebook, joblib could not un-pickle them in the
 app (pickle stores the import path of a class, not its code).
@@ -84,11 +84,13 @@ def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
 
     # Renovation recency. A never-renovated house is given its full age, which
     # is the honest reading of "years since the last time this was renewed".
+    # DataFrame.get()'s stub keeps `| None` in its return type even with a non-None
+    # default supplied, so pyright can't see that yr_reno is always a real Series here.
     yr_reno = d.get("yr_renovated", pd.Series(np.nan, index=d.index))
-    renovated = yr_reno.notna() & (yr_reno > 0)
+    renovated = yr_reno.notna() & (yr_reno > 0)  # pyright: ignore[reportOptionalMemberAccess, reportOptionalOperand]
     d["was_renovated"] = renovated.astype(int)
     d["years_since_reno"] = np.where(
-        renovated, REFERENCE_YEAR - yr_reno.fillna(REFERENCE_YEAR), d["house_age"]
+        renovated, REFERENCE_YEAR - yr_reno.fillna(REFERENCE_YEAR), d["house_age"]  # pyright: ignore[reportOptionalMemberAccess]
     )
     d["age_effective"] = d["years_since_reno"]
 
@@ -103,7 +105,7 @@ def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
         d["bedrooms"].fillna(0) + d["bathrooms"].fillna(0)
     ).replace(0, np.nan)
 
-    # Both areas are strongly right-skewed (Day 3). Logging them makes the
+    # Both areas are strongly right-skewed. Logging them makes the
     # relationship with log(price) roughly linear.
     d["log_sqft_living"] = np.log1p(d["sqft_living"])
     d["log_sqft_lot"] = np.log1p(d["sqft_lot"])
@@ -165,7 +167,9 @@ class SmoothedTargetEncoder(BaseEstimator, TransformerMixin):
     def _build_map(self, s: pd.Series, y: pd.Series, prior: float) -> dict:
         stats = y.groupby(s).agg(["mean", "count"])
         weight = stats["count"] / (stats["count"] + self.smoothing)
-        return (weight * stats["mean"] + (1 - weight) * prior).to_dict()
+        # pandas-stubs resolves this arithmetic to NDArray instead of Series; it is a
+        # Series at runtime (weight and stats["mean"] both are), so .to_dict() is valid.
+        return (weight * stats["mean"] + (1 - weight) * prior).to_dict()  # pyright: ignore[reportAttributeAccessIssue]
 
     # -- sklearn API ------------------------------------------------------
     def fit(self, X, y):
@@ -173,7 +177,7 @@ class SmoothedTargetEncoder(BaseEstimator, TransformerMixin):
         y = pd.Series(np.asarray(y)).reset_index(drop=True)
         self.feature_names_in_ = self._cols(X)
         self.prior_ = float(y.mean())
-        self.maps_ = {c: self._build_map(X[c], y, self.prior_)
+        self.maps_ = {c: self._build_map(X[c], y, self.prior_)  # pyright: ignore[reportArgumentType]
                       for c in self.feature_names_in_}
         return self
 
@@ -181,7 +185,7 @@ class SmoothedTargetEncoder(BaseEstimator, TransformerMixin):
         X = pd.DataFrame(X)
         out = pd.DataFrame(index=X.index)
         for c in self.feature_names_in_:
-            out[f"{c}_te"] = X[c].map(self.maps_[c]).astype(float).fillna(self.prior_)
+            out[f"{c}_te"] = X[c].map(self.maps_[c]).astype(float).fillna(self.prior_)  # pyright: ignore[reportArgumentType]
         return out.values
 
     def fit_transform(self, X, y=None, **fit_params):

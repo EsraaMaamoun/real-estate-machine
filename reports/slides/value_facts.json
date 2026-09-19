@@ -1,0 +1,69 @@
+{
+ "n_train": 3476,
+ "n_test": 869,
+ "mae": 82543.23298790249,
+ "medae": 49585.063233573106,
+ "medape": 10.542559546626554,
+ "rule_ppsf_mae": 101226.26394586415,
+ "rule_ppsf_medape": 13.937867338371124,
+ "saving_ppsf": 18683.03095796166,
+ "saving_ppsf_pct": 18.456703062708456,
+ "rule_ppsf_label": "zip price-per-sqft x size",
+ "rule_zipmed_mae": 155641.51323360184,
+ "rule_zipmed_medape": 21.001926782273603,
+ "saving_zipmed": 73098.28024569935,
+ "saving_zipmed_pct": 46.96579898705199,
+ "rule_zipmed_label": "zip median price",
+ "ppe10": 47.87111622554661,
+ "ppe20": 74.56846950517837,
+ "global_lo": -20.101260381851358,
+ "global_hi": 26.411419957632795,
+ "global_width": 46.51268033948415,
+ "segment_bands": [
+  {
+   "segment": "Established Family Home",
+   "n": 232,
+   "lo": -16.277432137907628,
+   "hi": 22.0365693427957,
+   "width": 38.314001480703325,
+   "medape": 9.706297598137983,
+   "median_price": 515000.0,
+   "usd_lo": 422004.6521902678,
+   "usd_hi": 615126.8566538795
+  },
+  {
+   "segment": "New-Build Suburban Family",
+   "n": 326,
+   "lo": -16.94371242721015,
+   "hi": 25.014010068832203,
+   "width": 41.95772249604235,
+   "medape": 9.434977427464922,
+   "median_price": 525000.0,
+   "usd_lo": 419952.9314441934,
+   "usd_hi": 632101.452331221
+  },
+  {
+   "segment": "Compact Entry-Level",
+   "n": 235,
+   "lo": -23.330290846136744,
+   "hi": 26.914096863259942,
+   "width": 50.24438770939669,
+   "medape": 10.855666755741106,
+   "median_price": 345000.0,
+   "usd_lo": 271837.4148552707,
+   "usd_hi": 449982.1426316394
+  },
+  {
+   "segment": "Premium View Property",
+   "n": 76,
+   "lo": -35.25612547595955,
+   "hi": 47.20191090288239,
+   "width": 82.45803637884194,
+   "medape": 17.905200802239833,
+   "median_price": 877475.0,
+   "usd_lo": 596102.9952789954,
+   "usd_hi": 1355301.9593755999
+  }
+ ],
+ "width_ratio": 2.15216456627146
+}

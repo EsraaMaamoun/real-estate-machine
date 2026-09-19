@@ -1,0 +1,31 @@
+#Streamlit theme — the app's half of the Ink & Amber identity.
+
+# This file exists for one practical reason: without it Streamlit follows the
+# viewer's operating system, so the app renders dark on one machine and light on
+# another. During a defence the app is projected next to the deck, and the two
+# have to look like one product. Pinning the theme here removes the variable.
+#
+# The colours are the same tokens as scripts/design.py and app/charts.py:
+#   paper #FBFAF7, ink #191714, amber #C07214, warm card #F2EFE9
+# The amber was checked against the paper surface for contrast (3:1+) rather than
+# picked by eye.
+
+[theme]
+base = "light"
+primaryColor = "#C07214"
+backgroundColor = "#FBFAF7"
+secondaryBackgroundColor = "#F2EFE9"
+textColor = "#191714"
+linkColor = "#9A5A10"
+font = "sans-serif"
+headingFont = "serif"
+codeFont = "monospace"
+borderColor = "#E2DCD1"
+showWidgetBorder = true
+baseRadius = "medium"
+
+[client]
+toolbarMode = "minimal"
+
+[server]
+headless = true

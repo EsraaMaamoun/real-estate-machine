@@ -1,5 +1,5 @@
 """
-llm_explain.py — the language layer (roadmap Day 11).
+llm_explain.py — the language layer.
 
 What this module is
 -------------------
@@ -103,6 +103,7 @@ def format_evidence(ev: dict) -> str:
     lines = [
         f"Predicted price: ${ev['predicted_price']:,.0f}",
         f"Honest range (8 out of 10 houses fall in it): ${ev['range_low']:,.0f} to ${ev['range_high']:,.0f}",
+        f"  (that range is measured on {ev.get('range_basis', 'all houses in the test set')})",
         f"Implied price per square foot: ${ev['price_per_sqft']:,.0f}",
         f"Model: {ev['model_name']}",
         f"Typical error of this model on unseen houses: {ev['typical_error_pct']}% (median)",
@@ -321,7 +322,7 @@ def _write_cache(cache: dict) -> None:
     CACHE_PATH.write_text(json.dumps(cache, indent=1), encoding="utf-8")
 
 
-def explain_prediction(ev: dict, provider: str = "auto", timeout: int = TIMEOUT_S,
+def explain_prediction(ev: dict, provider: str | None = "auto", timeout: int = TIMEOUT_S,
                        use_cache: bool = True) -> dict:
     """Evidence in, explanation out. Never raises, never returns nothing.
 

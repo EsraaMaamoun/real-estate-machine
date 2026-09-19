@@ -1,0 +1,141 @@
+{
+ "zip_ratio": 3.2,
+ "zip_lo": 142,
+ "zip_hi": 458,
+ "zip_lo_city": "Auburn",
+ "zip_hi_city": "Seattle",
+ "same_lo": 284507,
+ "same_hi": 916421,
+ "bath": 40432,
+ "bed": -11576,
+ "cond": 32460,
+ "cond_pct": 6.9,
+ "view": 44900,
+ "base100": -5971,
+ "reno_raw": 23,
+ "reno_lfl": 10,
+ "reno_zips": 16,
+ "reno_neg": 6,
+ "reno_be": 47663,
+ "median_price": 471000,
+ "age_ren": 74,
+ "age_not": 37,
+ "share650": 74,
+ "ppsf_ratio": 2.4,
+ "n_waterfront": 29,
+ "n_view": 431,
+ "ols_r2": 0.78,
+ "medae": 49585,
+ "mae": 82543,
+ "medape": 10.5,
+ "ppe10": 48,
+ "save_ppsf": 18683,
+ "save_zip": 73098,
+ "rule_ppsf_mae": 101226,
+ "rule_zip_mae": 155642,
+ "n_test": 869,
+ "n_train": 3476,
+ "global_lo": -20.1,
+ "global_hi": 26.4,
+ "bands": [
+  {
+   "segment": "Established Family Home",
+   "n": 232,
+   "lo": -16.3,
+   "hi": 22.0,
+   "width": 38.3,
+   "medape": 9.7
+  },
+  {
+   "segment": "New-Build Suburban Family",
+   "n": 326,
+   "lo": -16.9,
+   "hi": 25.0,
+   "width": 42.0,
+   "medape": 9.4
+  },
+  {
+   "segment": "Compact Entry-Level",
+   "n": 235,
+   "lo": -23.3,
+   "hi": 26.9,
+   "width": 50.2,
+   "medape": 10.9
+  },
+  {
+   "segment": "Premium View Property",
+   "n": 76,
+   "lo": -35.3,
+   "hi": 47.2,
+   "width": 82.5,
+   "medape": 17.9
+  }
+ ],
+ "vs_ridge": {
+  "diff_pp": -1.98,
+  "ci_lo": -3.06,
+  "ci_hi": -0.89,
+  "p": 0.0,
+  "verdict": "real"
+ },
+ "vs_xgb": {
+  "diff_pp": -0.41,
+  "ci_lo": -1.25,
+  "ci_hi": 0.15,
+  "p": 0.84,
+  "verdict": "not distinguishable"
+ },
+ "gb_r2": 0.8627,
+ "xgb_r2": 0.8668,
+ "gb_mape": 14.58,
+ "xgb_mape": 14.38,
+ "gb_mae": 82543,
+ "xgb_mae": 81447,
+ "medape_gb": 10.54,
+ "medape_xgb": 10.95,
+ "medape_ridge": 12.52,
+ "iaao": {
+  "Ridge baseline": {
+   "median_ratio": 0.9978,
+   "cod": 16.8683,
+   "prd": 1.016,
+   "pass": [
+    true,
+    false,
+    true
+   ]
+  },
+  "RF (tuned)": {
+   "median_ratio": 1.002,
+   "cod": 14.9468,
+   "prd": 1.0431,
+   "pass": [
+    true,
+    true,
+    false
+   ]
+  },
+  "GB (tuned)": {
+   "median_ratio": 0.9983,
+   "cod": 14.604,
+   "prd": 1.0298,
+   "pass": [
+    true,
+    true,
+    true
+   ]
+  },
+  "XGB (tuned)": {
+   "median_ratio": 0.9975,
+   "cod": 14.4154,
+   "prd": 1.0297,
+   "pass": [
+    true,
+    true,
+    true
+   ]
+  }
+ },
+ "medape_xgb_notebook": 10.78,
+ "vs_xgb_diff_notebook": -0.24
+}

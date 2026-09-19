@@ -5,6 +5,9 @@
 # version; unpickling under another one is not guaranteed to behave identically.
 
 streamlit>=1.61.0
+starlette<1.0  # streamlit 1.61.0 declares starlette<2, but starlette's 1.x line broke its
+               # gzip middleware (GZipResponder now needs thread_minimum_size) - pin to the
+               # last 0.x release until streamlit ships a fix.
 pandas>=3.0.5
 numpy>=2.4.6
 scikit-learn==1.9.0
