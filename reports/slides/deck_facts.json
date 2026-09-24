@@ -79,11 +79,12 @@
   "verdict": "real"
  },
  "vs_xgb": {
-  "diff_pp": -0.41,
-  "ci_lo": -1.25,
-  "ci_hi": 0.15,
-  "p": 0.84,
-  "verdict": "not distinguishable"
+  "diff_pp": -0.24,
+  "ci_lo": -0.92,
+  "ci_hi": 0.4,
+  "p": 0.12,
+  "verdict": "not distinguishable",
+  "source": "Notebooks/09_model_tuning.ipynb, section 8"
  },
  "gb_r2": 0.8627,
  "xgb_r2": 0.8668,
@@ -92,7 +93,7 @@
  "gb_mae": 82543,
  "xgb_mae": 81447,
  "medape_gb": 10.54,
- "medape_xgb": 10.95,
+ "medape_xgb": 10.78,
  "medape_ridge": 12.52,
  "iaao": {
   "Ridge baseline": {
@@ -136,9 +137,13 @@
    ]
   }
  },
- "medape_xgb_notebook": 10.78,
- "vs_xgb_diff_notebook": -0.24,
  "live_url": "https://real-estate-machine-esraa.streamlit.app",
  "repo_url": "https://github.com/EsraaMaamoun/real-estate-machine",
- "kaggle_url": "https://www.kaggle.com/code/esraamaamoun/real-estate-machine-house-price-valuation"
+ "kaggle_url": "https://www.kaggle.com/code/esraamaamoun/real-estate-machine-house-price-valuation",
+ "zillow": {
+  "on_market": 1.83,
+  "off_market": 7.01,
+  "checked": "24 September 2026",
+  "url": "https://www.zillow.com/how-much-is-my-home-worth/"
+ }
 }

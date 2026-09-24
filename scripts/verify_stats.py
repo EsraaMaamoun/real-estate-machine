@@ -1,11 +1,16 @@
 """
 verify_stats.py — the paired comparisons, re-run against the CURRENT artifacts.
 
-The August deck quoted a GB-vs-XGB gap of 0.18 pp. The September re-run moved it,
-and moved XGBoost ahead on R2 and on mean error. Nothing on a slide should be a
-number from the earlier run, so both comparisons are recomputed here on the model
-that is actually in Models/ and an XGBoost refitted with the parameters her own
-grid search selected (learning_rate 0.03, max_depth 4, n_estimators 800).
+An independent re-check, not the source of any quoted number. The GB-vs-XGB figures
+quoted in the README, the deck, the app and the Kaggle notebook all come from notebook 09,
+section 8 (gap -0.24 pp, 95% bootstrap CI [-0.92, +0.40], Wilcoxon p = 0.12), the same
+run as Models/model_comparison.csv.
+
+This script recomputes both comparisons on the model that is actually in Models/ and an
+XGBoost refitted with the parameters the grid search selected (learning_rate 0.03,
+max_depth 4, n_estimators 800). The refit is a second fit of the same configuration and
+lands at 10.95% rather than 10.78%, so its gap and p-value differ from notebook 09's;
+its verdict is the same: not distinguishable. GB vs Ridge reproduces notebook 09 exactly.
 
 Writes reports/slides/stats_facts.json.
 """

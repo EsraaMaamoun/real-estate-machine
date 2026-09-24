@@ -37,7 +37,7 @@ S = json.loads((OUT / "stats_facts.json").read_text())
 
 # ---------------------------------------------------------------- 1. value levers
 # Diverging: what adds value, what destroys it. One chart answers "where should
-# a refurbishment budget go?", which is the question a broker actually has.
+# a refurbishment budget go?", which is the question a valuation workflow actually has.
 levers = [
     ("Add a bathroom", B["bathroom"]["usd"]),
     ("+1 condition point", B["condition"]["usd"]),
@@ -67,7 +67,7 @@ fig.tight_layout(); fig.savefig(OUT / "fig_value_levers.png", dpi=200); plt.clos
 # Three bars, one message: what the alternatives cost you per house.
 fig, ax = plt.subplots(figsize=(11, 3.5))
 rows = [("Zip median price\n(a lookup, no model)", V["rule_zipmed_mae"], D.STONE),
-        ("Zip $/sqft x size\n(the broker's rule of thumb)", V["rule_ppsf_mae"], D.STONE),
+        ("Zip $/sqft x size\n(a valuation benchmark)", V["rule_ppsf_mae"], D.STONE),
         ("This model", V["mae"], D.AMBER)]
 ax.barh([r[0] for r in rows], [r[1] / 1000 for r in rows],
         color=[r[2] for r in rows], height=0.6)
@@ -102,18 +102,21 @@ bare(ax)
 fig.tight_layout(); fig.savefig(OUT / "fig_confidence_bands.png", dpi=200); plt.close(fig)
 
 # ---------------------------------------------------------------- 4. benchmark, sourced
+# Zillow's published nationwide median error rates change over time, so the figures and
+# the date they were checked live in deck_facts.json, next to the URL they came from.
+Z = json.loads((OUT / "deck_facts.json").read_text())["zillow"]
 fig, ax = plt.subplots(figsize=(11, 3.4))
 rows = [("No model: zip median", V["rule_zipmed_medape"], D.BRICK),
         ("This model", V["medape"], D.AMBER),
-        ("Zestimate, off-market\n(Zillow's published figure)", 7.5, D.GRAPHITE),
-        ("Zestimate, on-market —\nbut it can see the asking price", 1.9, D.STONE)]
+        ("Zestimate, off-market\n(US-wide, Zillow's figure)", Z["off_market"], D.GRAPHITE),
+        ("Zestimate, on-market —\nbut it can see the asking price", Z["on_market"], D.STONE)]
 ax.barh([r[0] for r in rows][::-1], [r[1] for r in rows][::-1],
         color=[r[2] for r in rows][::-1], height=0.58)
 for y, r in enumerate(rows[::-1]):
     ax.text(r[1] + 0.35, y, f"{r[1]:.1f}%", va="center", fontsize=12.5, color=INK)
 ax.set_xlim(0, 24)
 ax.set_xlabel("median absolute percentage error")
-ax.set_title("Where this model sits    ·    Source: Zillow, zillow.com/z/zestimate", fontsize=14)
+ax.set_title(f"Where this model sits    ·    Zillow's figures checked {Z['checked']}", fontsize=14)
 bare(ax)
 fig.tight_layout(); fig.savefig(OUT / "fig_benchmark.png", dpi=200); plt.close(fig)
 

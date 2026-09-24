@@ -4,8 +4,8 @@ verify_value.py — what the model is worth in money, and how wide its range rea
 Two things the August deck never said:
 
 1. Every figure on it was a percentage. A business audience converts to currency
-   or stops listening, so the error is restated in dollars, against the two
-   rules of thumb a broker would otherwise use.
+   or stops listening, so the error is restated in dollars, against two simple
+   valuation benchmarks that need no model.
 
 2. The "8 out of 10 houses" band was a single global number, even though the
    deck's own error-by-decile slide shows the error is not uniform. The band is
@@ -45,7 +45,7 @@ V["mae"] = float(ae.mean())
 V["medae"] = float(np.median(ae))
 V["medape"] = float(100 * np.median(ae / actual))
 
-# --- the two things a broker does instead of modelling ---------------------
+# --- two valuation benchmarks that need no model ---------------------------
 ppsf = (df.loc[tr, "price"] / df.loc[tr, "sqft_living"]).groupby(df.loc[tr, "zipcode"]).median()
 rule_ppsf = (df.loc[~tr, "zipcode"].map(ppsf).fillna(ppsf.median())
              * df.loc[~tr, "sqft_living"]).values

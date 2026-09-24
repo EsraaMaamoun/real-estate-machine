@@ -48,7 +48,7 @@ const HEAD = "Cambria", BODY = "Calibri";
 const p = new pptx();
 p.layout = "LAYOUT_WIDE";
 p.author = "Esraa Maamoun";
-p.title = "The Real Estate Machine";
+p.title = "The Real Estate Machine — Graduation Project";
 
 const W = 13.33, H = 7.5, M = 0.62;
 const usd = (n) => "$" + Math.round(n).toLocaleString("en-US");
@@ -156,8 +156,8 @@ const note = (s, t) => s.addNotes(t);
     });
   });
 
-  s.addText("Esraa Maamoun", {
-    x: M + 0.2, y: 6.82, w: 6, h: 0.35, fontFace: BODY, fontSize: 13,
+  s.addText("Esraa Maamoun   ·   App: EstateIQ — AI-Assisted Real Estate Valuation & Decision Support", {
+    x: M + 0.2, y: 6.82, w: 11, h: 0.35, fontFace: BODY, fontSize: 13,
     color: "9C948A", margin: 0,
   });
   note(s, "Opening line: 'I built a tool that values a house in about a second, tells you how much to trust the number, and writes the reasoning in plain English. I will show you the tool at the end. First, what it is for and why the number is defensible.'\n\nThe three figures at the foot are the whole argument in advance: accuracy, what that means in money, and the size of the evidence.\n\nTiming target: 14 minutes, leaving time for questions.");
@@ -300,7 +300,7 @@ const note = (s, t) => s.addNotes(t);
   const cw = (W - 2 * M - 0.6) / 3;
   const tiles = [
     [usd(F.medae), "Half of all valuations land within this of the sale price", AQUA],
-    [usd(F.save_ppsf), "Less error per house than the broker's price-per-sqft rule of thumb", INK],
+    [usd(F.save_ppsf), "Less error per house than a zip price-per-sqft valuation benchmark", INK],
     [usd(F.save_zip), "Less error per house than a plain zip-median lookup", INK],
   ];
   tiles.forEach(([v, l, c], i) => {
@@ -309,12 +309,12 @@ const note = (s, t) => s.addNotes(t);
     s.addText(v, { x: x + 0.28, y: 5.66, w: cw - 0.56, h: 0.62, fontFace: HEAD, fontSize: 30, bold: true, color: c, margin: 0 });
     s.addText(l, { x: x + 0.28, y: 6.3, w: cw - 0.56, h: 0.62, fontFace: BODY, fontSize: 12.5, color: MUTED, valign: "top", margin: 0 });
   });
-  note(s, `The sentence to say: 'On a portfolio of 200 properties, the difference between this model and the rule of thumb a broker uses today is about $${(F.save_ppsf * 200 / 1000000).toFixed(1)}m of valuation error — and it takes a minute to run.'\n\nBe careful with that framing under questioning: it is error, not profit. The value is in better decisions — which properties to visit, which to bid on, what range to quote — not in the arithmetic itself.\n\nCost: the app runs on a free tier. Time: about a second per valuation.`);
+  note(s, `The sentence to say: 'On a portfolio of 200 properties, the difference between this model and a zip-code price-per-sqft valuation benchmark is about $${(F.save_ppsf * 200 / 1000000).toFixed(1)}m of valuation error — and it takes a minute to run.'\n\nBe careful with that framing under questioning: it is error, not profit. The value is in better decisions — which properties to visit, which to bid on, what range to quote — not in the arithmetic itself.\n\nCost: the app runs on a free tier. Time: about a second per valuation.`);
 }
 
 // ============================================================ 10. recommendations
 {
-  const s = lightSlide("What a broker should actually do on Monday", "Recommendations");
+  const s = lightSlide("What a valuation workflow should do on Monday", "Recommendations");
   const recs = [
     ["Screen by zip code first, property second",
       `Location moves price ${F.zip_ratio}x; every structural feature combined moves it less. Set the buy list at zip level before anyone visits a house.`, BLUE],
@@ -334,7 +334,7 @@ const note = (s, t) => s.addNotes(t);
     y += 1.24;
   });
   footnote(s, "The commercial case is not accuracy. It is a defensible number, an honest range and a written reason, in a second, for nothing.", 6.55);
-  note(s, "Slow down here. This is where the examiners find out whether the modelling served a decision.\n\nOne concrete example: a broker with 200 listings runs them all through the app in a minute, quotes a range rather than a number, and sends a valuer only to the 30 the model is least sure about.");
+  note(s, "Slow down here. This is where the examiners find out whether the modelling served a decision.\n\nOne concrete example: a team with 200 listings runs them all through the app in a minute, quotes a range rather than a number, and sends a valuer only to the 30 the model is least sure about.");
 }
 
 // ============================================================ 11. model comparison
@@ -358,8 +358,8 @@ const note = (s, t) => s.addNotes(t);
 
   card(s, M + 6.25, 1.6, 5.85, 2.35, TINT);
   s.addText("vs tuned XGBoost", { x: M + 6.6, y: 1.8, w: 5.1, h: 0.32, fontFace: BODY, fontSize: 14, bold: true, color: MUTED, margin: 0 });
-  s.addText(`${F.vs_xgb_diff_notebook} pp`, { x: M + 6.6, y: 2.12, w: 5.1, h: 0.75, fontFace: HEAD, fontSize: 38, bold: true, color: MUTED, margin: 0 });
-  s.addText(`95% bootstrap CI [${F.vs_xgb.ci_lo}, +${F.vs_xgb.ci_hi}]\np = ${F.vs_xgb.p}   →   not distinguishable`, {
+  s.addText(`${F.vs_xgb.diff_pp} pp`, { x: M + 6.6, y: 2.12, w: 5.1, h: 0.75, fontFace: HEAD, fontSize: 38, bold: true, color: MUTED, margin: 0 });
+  s.addText(`95% bootstrap CI [${F.vs_xgb.ci_lo.toFixed(2)}, +${F.vs_xgb.ci_hi.toFixed(2)}]\nWilcoxon p = ${F.vs_xgb.p.toFixed(2)}   →   not distinguishable`, {
     x: M + 6.6, y: 2.9, w: 5.1, h: 0.8, fontFace: BODY, fontSize: 13.5, color: MUTED, margin: 0,
   });
 
@@ -378,7 +378,7 @@ const note = (s, t) => s.addNotes(t);
   s.addText("Two models I cannot tell apart are not two equally good products — the tie-break has to come from outside the leaderboard.", {
     x: M + 0.4, y: 6.48, w: 11.5, h: 0.4, fontFace: BODY, fontSize: 13, color: MUTED, margin: 0,
   });
-  note(s, "This is the slide that separates the project from a leaderboard exercise, and the honesty is the point. Do not say 'slightly better'; say 'not distinguishable'.\n\nOne technical footnote in case it is asked: the paired test needs both models' predictions, so XGBoost was refitted with the parameters your grid search chose. That refit scores 10.95% against the 10.78% in notebook 09 — a 0.17-point difference between two fits of the same configuration, which is an order of magnitude smaller than the confidence interval on the comparison. The point estimate quoted here is from the notebook table so that it matches the previous slide.\n\nBoth comparisons are paired — the same 869 houses, both models — with a Wilcoxon signed-rank test and a 2,000-sample bootstrap on the difference in median error.\n\nIf an examiner opens model_comparison.csv and finds XGBoost ahead on R², you have already said it. That is the whole reason it is on the slide.");
+  note(s, "This is the slide that separates the project from a leaderboard exercise, and the honesty is the point. Do not say 'slightly better'; say 'not distinguishable'.\n\nEvery number on this slide comes from notebook 09, section 8 — the same run that produced the comparison table on the previous slide, so the two slides cannot disagree. One more detail if asked: gradient boosting has the smaller error on only 47% of individual houses, which is one more sign of a tie, not a hidden loss.\n\nBoth comparisons are paired — the same 869 houses, both models — with a Wilcoxon signed-rank test and a 2,000-sample bootstrap on the difference in median error.\n\nIf an examiner opens model_comparison.csv and finds XGBoost ahead on R², you have already said it. That is the whole reason it is on the slide.");
 }
 
 // ============================================================ 13. IAAO
@@ -396,7 +396,7 @@ const note = (s, t) => s.addNotes(t);
   s.addText("Final choice, stated as what it is: two models are tied, so I shipped the one that needs no extra dependency to deploy and that won the metric I named in advance.", {
     x: M + 0.4, y: 6.4, w: 11.5, h: 0.42, fontFace: BODY, fontSize: 13, bold: true, color: INK, margin: 0,
   });
-  note(s, "IAAO = International Association of Assessing Officers; this is their Standard on Ratio Studies. Name the source out loud — it shows the criterion came from the industry, not from me.\n\nBe honest that COD 14.6 and PRD 1.030 sit near the edges of their bands, not comfortably inside. The next slide but one explains why PRD is strained: the top decile.\n\nIf pressed on the final choice: gradient boosting is in scikit-learn, so deployment needs no extra package; XGBoost would add one for a difference the test set cannot detect. That is an engineering reason, and I would rather give an engineering reason than pretend the data chose.");
+  note(s, "IAAO = International Association of Assessing Officers; this is their Standard on Ratio Studies. Name the source out loud — it shows the criterion is a published valuation benchmark, not one I invented.\n\nBe honest that COD 14.6 and PRD 1.030 sit near the edges of their bands, not comfortably inside. The next slide but one explains why PRD is strained: the top decile.\n\nIf pressed on the final choice: gradient boosting is in scikit-learn, so deployment needs no extra package; XGBoost would add one for a difference the test set cannot detect. That is an engineering reason, and I would rather give an engineering reason than pretend the data chose.");
 }
 
 // ============================================================ 14. benchmark
@@ -404,13 +404,13 @@ const note = (s, t) => s.addNotes(t);
   const s = lightSlide(`${F.medape}% — good, bad, or neither?`, "Benchmark");
   s.addImage({ path: path.join(S, "fig_benchmark.png"), x: M, y: 1.6, w: 12.1, h: 3.74 });
   card(s, M, 5.5, W - 2 * M, 1.5);
-  s.addText("The fair comparison is the off-market one.", {
+  s.addText("The fairer reference point is the off-market one.", {
     x: M + 0.4, y: 5.68, w: 11.5, h: 0.38, fontFace: BODY, fontSize: 16, bold: true, color: INK, margin: 0,
   });
-  s.addText(`Zillow's on-market Zestimate is four times more accurate than its off-market one — because for a listed home the model can see the asking price. Mine cannot; it sees 20 columns and ten weeks of 2014. Against the off-market figure, on a student dataset, ${F.medape}% is roughly half the distance to a commercial product. ${F.ppe10}% of valuations land within 10% of the sale price.`, {
+  s.addText(`Zillow's own published figures: ${F.zillow.off_market.toFixed(1)}% median error off-market, ${F.zillow.on_market.toFixed(1)}% on-market, where the model can see the asking price (zillow.com, checked ${F.zillow.checked}). Mine has no asking price; it sees 20 columns and ten weeks of 2014 in one county. Different market, years and data: context, not a head-to-head. ${F.ppe10}% of my valuations land within 10% of the sale price.`, {
     x: M + 0.4, y: 6.08, w: 11.5, h: 0.8, fontFace: BODY, fontSize: 13.5, color: MUTED, margin: 0,
   });
-  note(s, "'Is 10-15% error good enough for a real business?' — quote both the median (10.5%) and the mean (14.6%); the mean is dragged by the tail and hiding that would be dishonest.\n\nThe answer: not for a mortgage valuation, where a lender needs an appraisal. Yes for screening, portfolio triage, and giving a seller a starting range in seconds.\n\nSource for the Zillow figures: zillow.com/z/zestimate, their own published accuracy page.");
+  note(s, `'Is 10-15% error good enough for a real business?' — quote both the median (10.5%) and the mean (14.6%); the mean is dragged by the tail and hiding that would be dishonest.\n\nThe answer: not for a mortgage valuation, where a lender needs an appraisal. Yes for screening, portfolio triage, and giving a seller a starting range in seconds.\n\nSource for the Zillow figures: ${F.zillow.url} — Zillow's own published nationwide median error rates (${F.zillow.on_market}% on-market, ${F.zillow.off_market}% off-market), checked ${F.zillow.checked}. Zillow updates these figures, so quote the date you checked them. They describe the whole US market today, not King County in 2014: context for the number, not a like-for-like test.`);
 }
 
 // ============================================================ 15. where it is wrong
@@ -437,7 +437,7 @@ const note = (s, t) => s.addNotes(t);
 
 // ============================================================ 17. live demo
 {
-  const s = lightSlide("The product: a number, a range, a reason, a warning", "Live demo");
+  const s = lightSlide("EstateIQ: a number, a range, a reason, a warning", "Live demo");
   s.addImage({ path: path.join(S, "app_panel.png"), x: M, y: 1.6, w: 6.2, h: 4.77 });
   const bx = M + 6.5, bwid = W - M - bx;
   const bullets = [
@@ -500,7 +500,7 @@ const note = (s, t) => s.addNotes(t);
     x: M, y: 0.9, w: 11.5, h: 0.7, fontFace: HEAD, fontSize: 29, bold: true, color: WHITE, margin: 0,
   });
   const lims = [
-    ["Ten weeks of 2014", "No seasonality, no trend, a price level eleven years stale.", "More months of data — the only way to say anything about direction."],
+    ["Ten weeks of 2014", "No seasonality, no trend, a price level more than a decade stale.", "More months of data — the only way to say anything about direction."],
     ["Location is coarse", "No building grade, no coordinates; a zip code stands in for a neighbourhood.", "Coordinates and grade: the highest-value addition, and the cheapest."],
     ["The top decile is capped", "Trees cannot predict above the highest price they were trained on.", "A separate model for the tail, where extrapolation is possible."],
     [`${F.n_waterfront} waterfront homes`, "Too few for any confident claim, however dramatic the headline.", "Nothing to spend — say the sample size and move on."],
@@ -534,7 +534,7 @@ const note = (s, t) => s.addNotes(t);
   const hasQr = live && fs.existsSync(qrFile);
 
   const links = [
-    ["Live app", live || null],
+    ["EstateIQ live app", live || null],
     ["Code", F.repo_url || null],
     ["Kaggle notebook", F.kaggle_url || null],
   ];

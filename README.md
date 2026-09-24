@@ -1,20 +1,20 @@
-# Real Estate Machine
+# The Real Estate Machine — Graduation Project
 
 A house-price valuation system for the King County (WA) residential market: it segments the
 market, predicts a sale price, states how confident it is, and explains the number in plain
 language a buyer or an agent can act on.
 
-The app built in this project is **EstateIQ** — *AI-Assisted Real Estate Valuation & Decision Support*.
+The app built in this project is **EstateIQ — AI-Assisted Real Estate Valuation & Decision Support**.
 It is a decision-support tool, not a formal property appraisal.
 
-**Typical error: 10.5%** on unseen sales — against 21.0% for the zipcode-median rule the
-industry uses as a sanity check.
+**Typical error: 10.5%** on unseen sales — against 13.9% for a zip-code price-per-sqft
+valuation benchmark and 21.0% for a zip-code median-price benchmark (no model in either).
 
 | | |
 |---|---|
 | **Live app** | [real-estate-machine-esraa.streamlit.app](https://real-estate-machine-esraa.streamlit.app/) |
 | **Kaggle notebook** | [Real Estate Machine: House Price Valuation](https://www.kaggle.com/code/esraamaamoun/real-estate-machine-house-price-valuation) |
-| **Data** | 4,600 King County sales, 2014–2015 (Kaggle House Data) |
+| **Data** | 4,345 King County, WA home sales, 2 May – 10 July 2014 — cleaned from the 4,601 raw records of Kaggle's [House price prediction](https://www.kaggle.com/datasets/shree1992/housedata) dataset |
 | **Final model** | Gradient Boosting Regressor — R² 0.863, MedAPE 10.54% |
 
 ![EstateIQ valuing a house: estimate, range, segment, drivers, warning and AI-assisted explanation](reports/slides/app_result.png)
@@ -23,12 +23,13 @@ industry uses as a sanity check.
 
 ## What problem this solves
 
-Ask three people what a house is worth and you get three numbers and no reasoning. The rule of
-thumb most buyers fall back on — median price per square foot in the zipcode — is wrong by
-about 21% on a typical house, because it ignores condition, view, size and the difference
-between two streets in the same zipcode.
+Ask three people what a house is worth and you get three numbers and no reasoning. Two simple
+valuation benchmarks show how far a lookup gets you: valuing a house at its zip code's median
+sale price is wrong by about 21% on a typical house, and scaling the zip code's median price
+per square foot by the house's size is wrong by about 14%. Both ignore condition, view and the
+difference between two streets in the same zip code.
 
-This project replaces that rule with three things:
+This project goes beyond those benchmarks with three things:
 
 1. **A price** — a gradient-boosted model trained on 3,476 sales, wrong by about 10.5% on a
    typical house it has never seen.
@@ -113,7 +114,7 @@ Run them in order; each one saves what the next one loads.
 | `06_clustering` | K-Means, k=4 → four named market segments |
 | `07_classification` | A classifier that recovers the segment from raw inputs (98.7% accuracy) |
 | `08_regression` | Linear/Ridge/Lasso baseline — R² 0.827, MedAPE 12.5% |
-| `09_model_tuning` | RF / GB / XGB tuned; GB wins on the IAAO ratio study |
+| `09_model_tuning` | RF / GB / XGB tuned; paired tests; IAAO ratio study; GB chosen over a tied XGB |
 | `10_llm_explanation` | SHAP → grounded natural-language explanation |
 | `11_streamlit_app` | The interface, built on the modules in `app/` |
 | `12_deployment` | Pre-flight checks before the repository goes public |
@@ -142,16 +143,24 @@ is the correctly specified one.
 
 | Model | R² | MedAPE | MAPE | Within ±10% |
 |---|---|---|---|---|
-| Zipcode-median rule | 0.53 | 21.0% | — | — |
+| Zip-code median price (no model) | 0.527 | 21.00% | 26.22% | 25.5% |
+| Zip-code median $/sqft × size (no model) | 0.784 | 13.94% | 18.02% | 38.4% |
 | Ridge baseline | 0.827 | 12.52% | 16.83% | 41.0% |
 | RF (tuned) | 0.847 | 11.30% | 14.98% | 45.7% |
 | XGB (tuned) | 0.867 | 10.78% | 14.38% | 47.0% |
 | **GB (tuned) — shipped** | **0.863** | **10.54%** | **14.58%** | **47.9%** |
 
-GB and XGB are statistically indistinguishable on error (difference −0.18 pp, bootstrap CI
-[−0.72, +0.49], Wilcoxon p = 0.20). The tie is broken on the **IAAO ratio study**, the
-standard appraisal authorities use: GB is the only model that passes all three tests
-(ratio 0.998, COD 14.61, PRD 1.030 — Ridge fails COD, RF and XGB fail PRD).
+GB and XGB are statistically indistinguishable on error: GB's median error is 0.24 points
+lower, but the 95% bootstrap interval for that gap is [−0.92, +0.40] and the paired Wilcoxon
+test gives p = 0.12 (notebook 09, section 8, on the same 869 test houses). XGB is also ahead
+on R² and on mean error.
+
+The **IAAO ratio study** (the *Standard on Ratio Studies*, a published mass-appraisal
+valuation benchmark) narrows four models to two: Ridge fails uniformity (COD 16.87) and RF
+fails vertical equity (PRD 1.043), while GB (ratio 0.998, COD 14.60, PRD 1.030) and XGB
+(COD 14.42, PRD 1.030) both pass all three tests. The tie is broken on
+engineering grounds: GB ships from scikit-learn alone, with no extra dependency in the
+deployed app, and it leads on MedAPE, the metric chosen before the models were run.
 
 ### What drives the price
 
@@ -173,7 +182,7 @@ none.
 - **The cheapest decile is over-valued** by roughly 12%.
 - **Premium View Property** carries about twice the error of the other segments (17.9%) — it
   is the smallest segment at 7.9% of sales, and view is the hardest attribute to quantify.
-- **No time trend is modelled.** The data spans one year in one county; the model is a
+- **No time trend is modelled.** The data spans ten weeks (2 May – 10 July 2014) in one county; the model is a
   cross-sectional snapshot, not a forecast.
 - **Renovation looks worth 23% raw, ~10% like-for-like.** The raw figure is confounded by
   which houses get renovated.

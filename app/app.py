@@ -208,8 +208,8 @@ st.markdown('<div class="rem-rule"></div>', unsafe_allow_html=True)
 # the header says only what a user needs: what it learned from and how wrong it runs.
 _n_train = cfg.get("n_train")
 st.caption(
-    (f"Trained on {_n_train:,} Washington State home sales (May–July 2014). "
-     if _n_train else "Trained on Washington State home sales (May–July 2014). ")
+    (f"Trained on {_n_train:,} King County, Washington home sales (May–July 2014). "
+     if _n_train else "Trained on King County, Washington home sales (May–July 2014). ")
     + f"Typical error on homes it had never seen: {cfg['test_MedAPE_%']:.1f}% (median)."
 )
 st.markdown(
@@ -528,11 +528,11 @@ with tab_about:
         st.markdown(f"- {w}")
     st.markdown(
         """
-- Only ten weeks of 2014 data: no seasonality, no market trend, and the price level is
-  eleven years out of date.
-- Washington State only. It will not generalise to another market.
+- Only ten weeks of 2014 data (2 May – 10 July): no seasonality, no market trend, and the
+  price level is more than a decade out of date.
+- King County, Washington only. It will not generalise to another market.
 - No building grade and no coordinates, so location is captured coarsely by zip code.
-- About 33 waterfront homes in the whole dataset — too few to be confident about any of them.
+- 29 waterfront homes in the cleaned dataset — too few to be confident about any of them.
 """
     )
 
@@ -553,15 +553,18 @@ predicting `{cfg['target']}` and back-transformed with `{cfg['back_transform']}`
 
 **Model comparison and statistical test.** Chosen over Ridge, Random Forest and XGBoost.
 It beat Ridge by about 2 percentage points of median error, a difference that survived a
-paired significance test. It did **not** beat XGBoost by a distinguishable margin; the
-tie was broken on the IAAO ratio study below, which XGBoost fails.
+paired significance test. It did **not** beat XGBoost by a distinguishable margin: a gap of
+0.24 points, 95% bootstrap interval [−0.92, +0.40], Wilcoxon p = 0.12. Both pass the IAAO
+ratio study below, so the tie was broken on engineering grounds: this model runs on
+scikit-learn alone, with no extra dependency in the deployed app.
 
-**The IAAO ratio study.** The assessment industry judges a valuation model on three
-statistics rather than on accuracy alone:
+**The IAAO ratio study.** The IAAO *Standard on Ratio Studies*, a published mass-appraisal
+valuation benchmark, judges a valuation model on three statistics rather than on accuracy alone:
 median ratio **{cfg['iaao']['median_ratio']:.3f}** (target 0.90-1.10, no systematic
 over- or under-valuation), COD **{cfg['iaao']['cod']:.2f}** (target 5-15, consistency),
 PRD **{cfg['iaao']['prd']:.3f}** (target 0.98-1.03, cheap and expensive homes treated
-alike). This model passes all three. It is the only one of the four that does.
+alike). This model passes all three, as does XGBoost; Ridge fails consistency and Random
+Forest fails vertical equity.
 
 **How a valuation is produced.**
 """
