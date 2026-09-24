@@ -1,0 +1,14 @@
+# Line endings: text files are stored with LF in the repository, and each machine
+# checks them out in its own style (CRLF on Windows, LF on Linux and Streamlit Cloud).
+# Without this, every file re-saved on Windows shows up in `git status` as modified
+# even when not one character of its content changed.
+* text=auto
+
+# Binary files: never convert, never compare as text.
+*.pkl   binary
+*.npz   binary
+*.png   binary
+*.jpg   binary
+*.pdf   binary
+*.pptx  binary
+*.docx  binary
