@@ -4,17 +4,19 @@ A house-price valuation system for the King County (WA) residential market: it s
 market, predicts a sale price, states how confident it is, and explains the number in plain
 language a buyer or an agent can act on.
 
+The app built in this project is **EstateIQ** — *AI-Assisted Real Estate Valuation & Decision Support*.
+It is a decision-support tool, not a formal property appraisal.
+
 **Typical error: 10.5%** on unseen sales — against 21.0% for the zipcode-median rule the
 industry uses as a sanity check.
 
 | | |
 |---|---|
-| **Live app** | _add your Streamlit URL here_ |
-| **Kaggle notebook** | _add your Kaggle URL here_ |
+| **Live app** | [real-estate-machine-esraa.streamlit.app](https://real-estate-machine-esraa.streamlit.app/) |
 | **Data** | 4,600 King County sales, 2014–2015 (Kaggle House Data) |
 | **Final model** | Gradient Boosting Regressor — R² 0.863, MedAPE 10.54% |
 
-![The valuation app](reports/slides/app_result.png)
+![EstateIQ valuing a house: estimate, range, segment, drivers, warning and AI-assisted explanation](reports/slides/app_result.png)
 
 ---
 
