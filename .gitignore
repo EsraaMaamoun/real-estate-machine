@@ -33,6 +33,9 @@ SETUP.md
 DEFENSE.md
 reports/DECK_REVIEW.md
 PREP_NOTES_FROM_NOTEBOOKS.md
+AGENTS.md
+CONVERSATION_LOG.md
+ROADMAP.md.docx
 
 # Models/ and Data/: only the files the deployed app actually needs are committed.
 # Everything else in these two folders is an intermediate artifact from the dev
