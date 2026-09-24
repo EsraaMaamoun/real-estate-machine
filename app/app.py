@@ -411,8 +411,9 @@ with tab_value:
                         "checked against the evidence above before it was shown to you."
                     )
                 elif source == "cache":
-                    st.caption("Served from the local cache (this house has been valued "
-                               "before). No network call was made.")
+                    st.caption("Served from the local cache: this exact valuation was "
+                               "explained before, and every number was re-checked against "
+                               "the evidence above. No network call was made.")
                 elif source == "deterministic":
                     st.caption("Written in Python from the evidence above. No model call.")
                 else:

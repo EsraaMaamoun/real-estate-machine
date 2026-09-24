@@ -22,7 +22,9 @@ Four defences, because "we called an LLM" is not an engineering answer
    explanation. A demo that crashes because someone else's server is busy is a
    self-inflicted wound.
 4. **A cache.** Responses are stored on disk, so the defense demo can run with no
-   internet at all.
+   internet at all. An entry is keyed on the evidence it was written from, not just
+   the house, and is grounding-checked again every time it is served - so a change
+   to the model can never leave an old paragraph quoting old numbers.
 
 Configuration (never hard-code a key)
 -------------------------------------
@@ -304,8 +306,20 @@ def list_models() -> None:
 # 5. The one function the app calls
 # --------------------------------------------------------------------------
 def _cache_key(ev: dict) -> str:
+    """Identify an explanation by the evidence it was written from, not only the house.
+
+    The first version keyed on the house inputs alone. When the prediction bands were
+    later made segment-specific, the same house produced a new range, but the cache
+    kept serving the paragraph written for the old one: the page showed one range in
+    the headline and a different one in the explanation beneath it.
+
+    Keying on every number the paragraph is allowed to state (`allowed_numbers`) means
+    any change upstream - a retrained model, new bands, a new driver - produces a new
+    key, and the stale entry is simply never found again.
+    """
     h = ev["house"]
-    return json.dumps([h[k] for k in sorted(h)], default=str)
+    evidence = sorted(round(float(v), 2) for v in allowed_numbers(ev))
+    return json.dumps([[h[k] for k in sorted(h)], evidence], default=str)
 
 
 def _read_cache() -> dict:
@@ -335,7 +349,14 @@ def explain_prediction(ev: dict, provider: str | None = "auto", timeout: int = T
     cache = _read_cache() if use_cache else {}
     key = _cache_key(ev)
     if use_cache and key in cache:
-        return {**result, **cache[key], "source": "cache"}
+        hit = cache[key]
+        # Re-check on every hit, not only when the text was first generated. The key
+        # already ties the entry to this evidence; this makes "every number shown was
+        # verified" true on the cached path too, including for a hand-edited file.
+        ok, _ = check_grounding(hit.get("text", ""), ev)
+        if ok and hit.get("text", "").strip():
+            return {**result, **hit, "source": "cache"}
+        # Otherwise fall through: write a fresh paragraph, which replaces this entry.
 
     provider = available_provider() if provider == "auto" else provider
     api_key = os.getenv("GEMINI_API_KEY") if provider == "gemini" else os.getenv("GROQ_API_KEY")
