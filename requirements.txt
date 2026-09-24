@@ -11,7 +11,7 @@ matplotlib>=3.7
 seaborn>=0.12
 
 # Modelling
-scikit-learn>=1.3
+scikit-learn==1.9.0   # must match the version that saved the model files the app loads (see README)
 xgboost>=2.0
 joblib>=1.3
 

@@ -182,7 +182,10 @@ none.
 
 ## Built with
 
-Python · pandas · scikit-learn 1.7.2 · XGBoost · SHAP · Streamlit · Gemini / Groq
+Python · pandas · scikit-learn 1.9.0 · XGBoost · SHAP · Streamlit · Gemini / Groq
 
-`scikit-learn` is pinned: `Models/regressor.pkl` was pickled by 1.7.2, and un-pickling it
-under a different version is a warning you do not want in a deployed valuation model.
+`scikit-learn` is pinned to 1.9.0, in both requirements files: every model file the app loads
+was saved by 1.9.0, and un-pickling under a different version is a warning you do not want
+in a deployed valuation model. `Models/cluster_pipeline.pkl` was originally saved by 1.8.0; it
+was re-saved under 1.9.0 after checking that its learned parameters and the segment it assigns
+to all 4,345 houses are identical.
