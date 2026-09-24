@@ -137,5 +137,8 @@
   }
  },
  "medape_xgb_notebook": 10.78,
- "vs_xgb_diff_notebook": -0.24
+ "vs_xgb_diff_notebook": -0.24,
+ "live_url": "https://real-estate-machine-esraa.streamlit.app",
+ "repo_url": "https://github.com/EsraaMaamoun/real-estate-machine",
+ "kaggle_url": "https://www.kaggle.com/code/esraamaamoun/real-estate-machine-house-price-valuation"
 }

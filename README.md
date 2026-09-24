@@ -13,6 +13,7 @@ industry uses as a sanity check.
 | | |
 |---|---|
 | **Live app** | [real-estate-machine-esraa.streamlit.app](https://real-estate-machine-esraa.streamlit.app/) |
+| **Kaggle notebook** | [Real Estate Machine: House Price Valuation](https://www.kaggle.com/code/esraamaamoun/real-estate-machine-house-price-valuation) |
 | **Data** | 4,600 King County sales, 2014–2015 (Kaggle House Data) |
 | **Final model** | Gradient Boosting Regressor — R² 0.863, MedAPE 10.54% |
 
