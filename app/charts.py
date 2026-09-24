@@ -58,7 +58,7 @@ def driver_chart(drivers: list[dict]):
                 ha="left" if v >= 0 else "right", fontsize=9.5, color=INK)
 
     ax.set_xlim(-1.45 * span, 1.45 * span)
-    ax.set_xlabel("effect on the predicted price", fontsize=9.5, color=INK)
+    ax.set_xlabel("effect on the estimated value (%)", fontsize=9.5, color=INK)
     ax.tick_params(axis="y", labelsize=9.5, length=0)
     ax.tick_params(axis="x", labelsize=9, colors=INK)
     for side in ("top", "right", "left"):

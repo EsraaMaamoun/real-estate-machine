@@ -1,5 +1,8 @@
 """
-app.py — the Real Estate Machine.
+app.py — EstateIQ, the product interface of the Real Estate Machine project.
+
+EstateIQ is the name the user sees; `real-estate-machine` stays the repository name, so
+the deployed URL and every existing link keep working.
 
 What this file is, and what it is deliberately NOT
 --------------------------------------------------
@@ -82,7 +85,7 @@ _load_secrets_into_env()
 MODELS = ROOT / "Models"
 DATA = ROOT / "Data"
 
-st.set_page_config(page_title="Real Estate Machine", layout="wide")
+st.set_page_config(page_title="EstateIQ", layout="wide")
 
 
 # --------------------------------------------------------------------------
@@ -158,7 +161,7 @@ known_cities = sorted(ref.get("known_cities", []))
 #
 # `.streamlit/config.toml` carries the colours; this carries the typography and
 # the two details that make the app and the slide deck read as one product: a
-# serif headline and an amber rule under an eyebrow label.
+# serif headline and an amber rule, here under the EstateIQ name and tagline.
 #
 # Deliberately small. Streamlit renames its internal CSS classes between
 # versions, so anything that targets them breaks on upgrade; everything below
@@ -173,26 +176,45 @@ BRAND_CSS = """
   [data-testid="stMetricValue"] {
       font-family: Cambria, Georgia, serif !important; font-weight: 700; }
   [data-testid="stMetricLabel"] { color: #6B6358 !important; }
-  .rem-eyebrow { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.16em;
-                 color: #C07214; text-transform: uppercase; margin-bottom: 0.15rem; }
+  .rem-tagline { font-size: 1.05rem; color: #6B6358; margin-top: 0.15rem; }
   .rem-rule { height: 3px; width: 64px; background: #C07214; margin: 0.55rem 0 0.9rem 0; }
   div[data-testid="stAlert"] { border-radius: 8px; }
+
+  /* The product disclaimer: the first thing read after the name, on purpose. */
+  .rem-disclaimer { background: #F2EFE9; border-left: 4px solid #C07214;
+                    border-radius: 6px; padding: 0.6rem 0.95rem; margin: 0.35rem 0 1.1rem 0;
+                    font-weight: 600; color: #191714; }
+
+  /* The valuation hierarchy: one hero number, then everything that qualifies it. */
+  .rem-label { font-size: 0.875rem; color: #6B6358; margin-bottom: 0.05rem; }
+  .rem-value { font-family: Cambria, Georgia, serif; font-weight: 700; font-size: 3.2rem;
+               line-height: 1.05; color: #191714; margin-bottom: 0.7rem; }
+
+  /* A quiet but explicit note, used for what the language model does and does not do. */
+  .rem-note { border-left: 2px solid #C07214; padding: 0.1rem 0 0.1rem 0.75rem;
+              margin: 0 0 0.85rem 0; color: #6B6358; font-size: 0.93rem; }
 </style>
 """
 st.markdown(BRAND_CSS, unsafe_allow_html=True)
 
-st.markdown('<div class="rem-eyebrow">Valuation tool</div>', unsafe_allow_html=True)
-st.title("Real Estate Machine")
+st.title("EstateIQ")
+st.markdown(
+    '<div class="rem-tagline">AI-Assisted Real Estate Valuation &amp; Decision Support</div>',
+    unsafe_allow_html=True,
+)
 st.markdown('<div class="rem-rule"></div>', unsafe_allow_html=True)
+
+# The model's name and hyperparameters live under "Technical details" on the About tab;
+# the header says only what a user needs: what it learned from and how wrong it runs.
+_n_train = cfg.get("n_train")
 st.caption(
-    f"{cfg['model_name']} trained on {cfg.get('n_train', 3476):,} Washington State sales "
-    f"(May-July 2014). Typical error on houses it had never seen: "
-    f"{cfg['test_MedAPE_%']:.1f}% (median). "
-    "A screening tool, not a formal valuation."
-    if "n_train" in cfg else
-    f"{cfg['model_name']}, trained on Washington State sales from May-July 2014. "
-    f"Typical error on houses it had never seen: {cfg['test_MedAPE_%']:.1f}% (median). "
-    "A screening tool, not a formal valuation."
+    (f"Trained on {_n_train:,} Washington State home sales (May–July 2014). "
+     if _n_train else "Trained on Washington State home sales (May–July 2014). ")
+    + f"Typical error on homes it had never seen: {cfg['test_MedAPE_%']:.1f}% (median)."
+)
+st.markdown(
+    '<div class="rem-disclaimer">Decision-support tool — not a formal property appraisal.</div>',
+    unsafe_allow_html=True,
 )
 
 tab_value, tab_test, tab_about = st.tabs(
@@ -204,18 +226,34 @@ tab_value, tab_test, tab_about = st.tabs(
 # Tab 1 — the demo
 # --------------------------------------------------------------------------
 def show_evidence(evidence: dict, actual_price: float | None = None):
-    """Render one dossier. Used by both the demo tab and the real-sales tab."""
-    c1, c2, c3 = st.columns([1.1, 1.5, 1])
-    c1.metric("Predicted price", money(evidence["predicted_price"]))
+    """Render one dossier in the order a reader needs it.
+
+        Estimated value -> range -> market segment -> what moved it -> warnings
+
+    The AI-assisted explanation comes last and is rendered by the caller, because it is
+    the only step that may make a network call - and the only one that must never be
+    mistaken for the source of the number.
+    """
+    # 1. Estimated value - one number, on its own line, the largest thing on the page.
+    #    "&#36;" rather than "$": this goes through st.markdown, where a stray pair of
+    #    dollar signs is read as LaTeX.
+    st.markdown(
+        '<div class="rem-label">Estimated value</div>'
+        f'<div class="rem-value">{money(evidence["predicted_price"]).replace("$", "&#36;")}</div>',
+        unsafe_allow_html=True,
+    )
+
+    # 2. The range, and what qualifies it.
+    c1, c2 = st.columns([1.5, 1])
     # No "$" inside this value: Streamlit renders metric text as markdown, and two dollar
     # signs in one string are read as LaTeX. The unit goes in the label instead.
-    c2.metric("Honest range, $  (8 of 10 houses)",
+    c1.metric("Estimated valuation range, $  (8 of 10 houses)",
               f"{evidence['range_low']:,.0f} - {evidence['range_high']:,.0f}")
     if actual_price is None:
-        c3.metric("Implied price per sqft", money(evidence["price_per_sqft"]))
+        c2.metric("Implied price per sqft", money(evidence["price_per_sqft"]))
     else:
         err = 100 * abs(evidence["predicted_price"] - actual_price) / actual_price
-        c3.metric("Actual sale price", money(actual_price), f"{err:.1f}% error",
+        c2.metric("Actual sale price", money(actual_price), f"{err:.1f}% error",
                   delta_color="off")
 
     # Which houses that range was measured on. The band is segment-specific when
@@ -227,22 +265,26 @@ def show_evidence(evidence: dict, actual_price: float | None = None):
         f"({evidence.get('range_width_pp', 47)} percentage points wide)."
     )
 
+    # 3. Market segment.
     if evidence.get("segment"):
-        line = f"**Market segment:** {evidence['segment']}"
+        st.subheader("Market segment")
+        line = f"**{evidence['segment']}**"
         if evidence.get("segment_typical_error_pct"):
             line += (f" — typical error for this segment: "
                      f"{evidence['segment_typical_error_pct']}%")
         st.markdown(line)
 
-    st.subheader("What moved this valuation")
+    # 4. What moved the valuation.
+    st.subheader("What moved the valuation")
     if has_shap:
         st.pyplot(driver_chart(evidence["drivers"]))
-        st.caption(
-            "SHAP values, converted from log space to a percentage effect on the price. "
-            "They add up to the difference between this house and the average house — "
-            "this is a decomposition of the actual prediction, not a general statement "
-            "about which features matter."
-        )
+        with st.expander("Technical details"):
+            st.caption(
+                "SHAP values, converted from log space to a percentage effect on the price. "
+                "They add up to the difference between this house and the average house — "
+                "this is a decomposition of the actual prediction, not a general statement "
+                "about which features matter."
+            )
     else:
         st.dataframe(
             pd.DataFrame(evidence["drivers"])[["label", "value", "pct_effect"]]  # pyright: ignore[reportCallIssue]
@@ -251,8 +293,10 @@ def show_evidence(evidence: dict, actual_price: float | None = None):
             hide_index=True,
         )
 
+    # 5. Warnings - the heading is always shown, so "none" is a stated result,
+    #    not an absence the reader has to notice.
+    st.subheader("Warnings")
     if evidence["flags"]:
-        st.subheader("Warnings")
         for f in evidence["flags"]:
             st.warning(f)
     else:
@@ -292,7 +336,7 @@ with tab_value:
             )
 
             use_llm = st.checkbox(
-                "Write the explanation with a language model", value=True,
+                "Write an AI-assisted explanation", value=True,
                 help="Unticked, the app writes the same explanation deterministically "
                      "from the same evidence. Nothing about the valuation changes.",
             )
@@ -309,8 +353,8 @@ with tab_value:
         if not submitted:
             st.info(
                 "Fill in the house on the left and press **Value this house**.\n\n"
-                "The valuation, the range around it, the drivers behind it and any "
-                "warnings will appear here."
+                "The estimated value, its range, the market segment, what moved the "
+                "valuation, any warnings and an AI-assisted explanation will appear here."
             )
         else:
             house = {
@@ -332,21 +376,35 @@ with tab_value:
                 evidence = valuer.evidence(house)
                 show_evidence(evidence)
 
-                st.subheader("The explanation")
+                # 6. The explanation - produced after the evidence, never before it.
                 if use_llm:
-                    with st.spinner("Writing..."):
+                    with st.spinner("Writing the explanation..."):
                         out = llm_explain.explain_prediction(evidence)
                 else:
                     out = {"text": llm_explain.fallback_explanation(evidence),
                            "source": "deterministic", "grounded": True,
                            "ungrounded_numbers": [], "error": None}
 
+                source = out["source"]
+                # Only call it AI-assisted when a language model actually wrote it. The
+                # cache holds language-model text too; the deterministic template and the
+                # fallback do not, and labelling them "AI" would be a small lie.
+                ai_written = source in ("gemini", "groq", "cache")
+                if ai_written:
+                    st.subheader("AI-assisted explanation")
+                    st.markdown(
+                        '<div class="rem-note">The language model explains evidence produced '
+                        'by the valuation model; it does not determine the valuation.</div>',
+                        unsafe_allow_html=True,
+                    )
+                else:
+                    st.subheader("Explanation")
+
                 # Escape the dollar signs before rendering. Streamlit renders markdown,
                 # and a pair of unescaped "$" in the same paragraph is read as LaTeX -
                 # which silently swallows "$565,600 ... $314" into a maths block.
                 st.write(out["text"].replace("$", r"\$"))
 
-                source = out["source"]
                 if source in ("gemini", "groq"):
                     st.caption(
                         f"Written by {source}. Every number in that paragraph was "
@@ -376,10 +434,9 @@ with tab_value:
 with tab_test:
     st.subheader("Five real sales, and what the model would have said")
     st.markdown(
-        "A demo where you type in a house and admire the answer proves nothing — "
-        "there is no right answer to compare against. These five houses are **test-set "
-        "rows**: real sales the model never saw during training. The sale price is "
-        "known, so every prediction here is falsifiable."
+        "These properties come from the held-out test set and were not seen during "
+        "training. Their sale prices are known, so every estimate below can be checked "
+        "against what the house actually sold for."
     )
 
     sales = load_sales()
@@ -425,14 +482,14 @@ with tab_test:
                 "beds": house["bedrooms"],
                 "sqft": house["sqft_living"],
                 "actual sale": actual,
-                "predicted": ev["predicted_price"],
+                "estimated value": ev["predicted_price"],
                 "error %": 100 * (ev["predicted_price"] - actual) / actual,
                 "segment": ev["segment"],
             })
 
         table = pd.DataFrame(rows)
         st.dataframe(
-            table.style.format({"actual sale": "${:,.0f}", "predicted": "${:,.0f}",
+            table.style.format({"actual sale": "${:,.0f}", "estimated value": "${:,.0f}",
                                 "error %": "{:+.1f}%", "sqft": "{:,.0f}"}),
             hide_index=True,
         )
@@ -459,21 +516,10 @@ with tab_about:
     m4.metric("R2 (log price)", f"{cfg['test_R2_log']:.3f}")
 
     st.markdown(
-        f"""
-**The model.** {cfg['model_name']} — `{cfg.get('sklearn_params', {})}` — predicting
-`{cfg['target']}` and back-transformed with `{cfg['back_transform']}`. Chosen
-over Ridge, Random Forest and XGBoost. It beat Ridge by about 2 percentage points of
-median error, a difference that survived a paired significance test. It did **not**
-beat XGBoost by a distinguishable margin; the tie was broken on the IAAO ratio study
-below, which XGBoost fails.
-
-**The IAAO ratio study.** The assessment industry judges a valuation model on three
-statistics rather than on accuracy alone:
-median ratio **{cfg['iaao']['median_ratio']:.3f}** (target 0.90-1.10, no systematic
-over- or under-valuation), COD **{cfg['iaao']['cod']:.2f}** (target 5-15, consistency),
-PRD **{cfg['iaao']['prd']:.3f}** (target 0.98-1.03, cheap and expensive homes treated
-alike). This model passes all three. It is the only one of the four that does.
-"""
+        "Selected from four candidate models after tuning and validation on sales it "
+        "never saw, and checked against the ratio-study standards property assessors "
+        "use. The model comparison, the statistical tests and the full methodology are "
+        "under **Technical details** at the bottom of this page."
     )
 
     st.subheader("Where it is weak — say this before anyone asks")
@@ -495,21 +541,44 @@ alike). This model passes all three. It is the only one of the four that does.
                .rename("median error %").to_frame())
         st.dataframe(seg.style.format({"median error %": "{:.1f}%"}))
 
-    st.subheader("How a valuation is produced")
-    st.code(
-        "your inputs\n"
-        "  -> preprocessing.engineer_features()   the same function that built the training set\n"
-        "  -> the fitted pipeline                 scaling + smoothed target encoding, fitted on TRAIN only\n"
-        "  -> " + cfg["model_name"] + "\n"
-        "  -> np.expm1()                          back to dollars\n"
-        "  -> SHAP                                what moved this particular prediction\n"
-        "  -> deterministic checks                the warnings\n"
-        "  -> language model                      turns all of the above into sentences\n"
-        "  -> grounding check                     rejects any number it was not given",
-        language="text",
-    )
-    st.caption(
-        "The language model is the last step and the least important one. It cannot "
-        "change a valuation; it can only describe one, and every figure it writes is "
-        "verified against the evidence before you see it."
-    )
+    # Everything below is unchanged in substance - moved, not removed. A reviewer who
+    # wants the hyperparameters, the significance test or the IAAO figures opens one
+    # section; a user who does not is not made to scroll past them.
+    with st.expander("Technical details"):
+        st.markdown(
+            f"""
+**Model and hyperparameters.** {cfg['model_name']} — `{cfg.get('sklearn_params', {})}` —
+predicting `{cfg['target']}` and back-transformed with `{cfg['back_transform']}`.
+
+**Model comparison and statistical test.** Chosen over Ridge, Random Forest and XGBoost.
+It beat Ridge by about 2 percentage points of median error, a difference that survived a
+paired significance test. It did **not** beat XGBoost by a distinguishable margin; the
+tie was broken on the IAAO ratio study below, which XGBoost fails.
+
+**The IAAO ratio study.** The assessment industry judges a valuation model on three
+statistics rather than on accuracy alone:
+median ratio **{cfg['iaao']['median_ratio']:.3f}** (target 0.90-1.10, no systematic
+over- or under-valuation), COD **{cfg['iaao']['cod']:.2f}** (target 5-15, consistency),
+PRD **{cfg['iaao']['prd']:.3f}** (target 0.98-1.03, cheap and expensive homes treated
+alike). This model passes all three. It is the only one of the four that does.
+
+**How a valuation is produced.**
+"""
+        )
+        st.code(
+            "your inputs\n"
+            "  -> preprocessing.engineer_features()   the same function that built the training set\n"
+            "  -> the fitted pipeline                 scaling + smoothed target encoding, fitted on TRAIN only\n"
+            "  -> " + cfg["model_name"] + "\n"
+            "  -> np.expm1()                          back to dollars\n"
+            "  -> SHAP                                what moved this particular prediction\n"
+            "  -> deterministic checks                the warnings\n"
+            "  -> language model                      turns all of the above into sentences\n"
+            "  -> grounding check                     rejects any number it was not given",
+            language="text",
+        )
+        st.caption(
+            "The language model is the last step and the least important one. It cannot "
+            "change a valuation; it can only describe one, and every figure it writes is "
+            "verified against the evidence before you see it."
+        )
