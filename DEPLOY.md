@@ -83,7 +83,7 @@ whatever version notebook 12 reports for your machine.
 ## 3. Push to GitHub, with nothing secret in it
 
 ```bash
-cd "C:\Users\MY LAP\Documents\Graduation Project"
+cd path\to\real-estate-machine
 
 git init
 git add .
